@@ -13,8 +13,7 @@
   import ModelSpread from "./lib/components/ModelSpread.svelte";
   import Observation from "./lib/components/Observation.svelte";
   import SearchBar from "./lib/components/SearchBar.svelte";
-  import { Lighthouse } from "@lucide/svelte";
-
+  import Hero from "./lib/components/Hero.svelte";
   // El gráfico de mareas (LayerChart) pesa mucho: se descarga recién
   // cuando se elige una playa, no al abrir la página
   const loadTideChart = () => import("./lib/components/TideChart.svelte");
@@ -119,9 +118,7 @@
 </script>
 
 <header>
-  <Lighthouse aria-hidden="true" />
-  <h1>Comarca Weather</h1>
-  <p>Viedma, Carmen de Patagones y las playas de la costa.</p>
+  <Hero/>
   <SearchBar {locations} selectedSlug={selected?.slug} onselect={navigate} />
 </header>
 

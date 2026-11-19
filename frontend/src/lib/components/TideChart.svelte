@@ -17,6 +17,9 @@
   let now = $derived(nowAR());
   let nowDate = $derived(toDate(now));
   let nowVisible = $derived(nowDate >= data[0].fecha && nowDate <= data[data.length - 1].fecha);
+  let heights = $derived(tides.serie.map((p) => p.altura_m));
+  // Holgura arriba y abajo para que las etiquetas de pleamar/bajamar no toquen los bordes
+  let yDomain = $derived([Math.min(...heights) - 0.6, Math.max(...heights) + 0.6]);
 
   // Cada pleamar/bajamar es un punto con su hora; el momento actual, una línea vertical
   let annotations = $derived([
@@ -27,6 +30,7 @@
       r: 4,
       label: hhmm(m.hora),
       labelPlacement: m.tipo === 'pleamar' ? 'top' : 'bottom',
+      labelGap: 8,
     })),
     ...(nowVisible ? [{ type: 'line', x: nowDate, label: 'Ahora', labelPlacement: 'top-right' }] : []),
   ]);
@@ -40,6 +44,7 @@
     x="fecha"
     y="altura"
     xScale={scaleTime()}
+    {yDomain}
     series={[{ key: 'altura', label: 'Altura', value: 'altura', color: 'var(--color-primary)' }]}
     {annotations}
     props={{
