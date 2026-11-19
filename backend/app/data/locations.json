@@ -1,0 +1,15 @@
+[
+  {"slug": "viedma", "nombre": "Viedma", "lat": -40.8135, "lon": -62.9967, "tipo": "ciudad", "estacion": "SAVV"},
+  {"slug": "carmen-de-patagones", "nombre": "Carmen de Patagones", "lat": -40.7983, "lon": -62.9811, "tipo": "ciudad"},
+  {"slug": "el-condor", "nombre": "El Cóndor", "lat": -41.0617, "lon": -62.8183, "tipo": "playa"},
+  {"slug": "la-loberia", "nombre": "La Lobería", "lat": -41.15316281788127, "lon": -63.125532879251395, "tipo": "playa"},
+  {"slug": "bahia-creek", "nombre": "Bahía Creek", "lat": -41.08345668740494, "lon": -63.93197492850387, "tipo": "playa"},
+  {"slug": "el-espigon", "nombre": "El Espigón", "lat": -41.12016310841628, "lon": -63.00945268332795, "tipo": "playa"},
+  {"slug": "la-baliza", "nombre": "La Baliza", "lat": -41.03136531003575, "lon": -62.758099112701345, "tipo": "playa"},
+  {"slug": "playa-bonita", "nombre": "Playa Bonita", "lat": -41.124970472815725, "lon": -63.02435757619354, "tipo": "playa"},
+  {"slug": "bahia-rosas", "nombre": "Bahía Rosas", "lat": -41.1535564, "lon": -63.3670327, "tipo": "playa"},
+  {"slug": "bajada-de-echandi", "nombre": "Bajada de Echandi", "lat": -41.1595070, "lon": -63.5504071, "tipo": "playa"},
+  {"slug": "playa-winter", "nombre": "Playa Winter", "lat": -40.8994511, "lon": -64.4678959, "tipo": "playa"},
+  {"slug": "pozo-salado", "nombre": "Pozo Salado", "lat": -41.0144200, "lon": -64.1514460, "tipo": "playa"},
+  {"slug": "bahia-san-blas", "nombre": "Bahía San Blas", "lat": -40.5597134, "lon": -62.2346056, "tipo": "playa"}
+]
