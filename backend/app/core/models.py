@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class Location(TypedDict):
@@ -7,3 +7,4 @@ class Location(TypedDict):
     tipo: str
     lat: float
     lon: float
+    estacion: NotRequired[str]

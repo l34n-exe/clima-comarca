@@ -2,11 +2,11 @@ import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-import requests # type: ignore
 from flask import current_app # type: ignore
 
 from ..core.exceptions import WeatherError
 from ..utils.tides import find_extremes
+from . import http
 
 
 WEATHER_CODES = {
@@ -48,14 +48,8 @@ def _require_integer(value, field):
 
 def _request(url, params):
     try:
-        response = requests.get(
-            url,
-            params=params,
-            timeout=current_app.config["HTTP_TIMEOUT"],
-        )
-        response.raise_for_status()
-        return response.json()
-    except (requests.RequestException, ValueError) as exc:
+        return http.get(url, params).json()
+    except ValueError as exc:
         raise WeatherError(str(exc)) from exc
 
 

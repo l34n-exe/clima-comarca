@@ -1,12 +1,16 @@
 <script>
-  import { num, compass } from '../utils/format.js';
+  import { num, compass, minutesAgo, ago } from '../utils/format.js';
   let { data } = $props();
+  let updatedMin = $derived(data.hora ? minutesAgo(data.hora) : null);
 </script>
 
 <div class="card">
   <div class="main">
     <p class="temp">{num(data.temp, 0)}<span>°C</span></p>
     <p class="cond">{data.descripcion}</p>
+    {#if updatedMin != null}
+      <p class="updated">Actualizado {ago(updatedMin)} · {data.hora.slice(11, 16)} h</p>
+    {/if}
   </div>
   <dl class="stats">
     <div><dt>Sensación</dt><dd>{num(data.sensacion, 0)} °C</dd></div>
@@ -26,6 +30,7 @@
   .temp { margin: 0; font-size: clamp(4rem, 13vw, 6.5rem); font-weight: 800; line-height: 0.9; letter-spacing: -0.04em; }
   .temp span { font-size: 0.38em; font-weight: 600; letter-spacing: 0; margin-left: 0.1em; vertical-align: top; }
   .cond { margin: 0.5rem 0 0; font-size: 1.25rem; font-weight: 600; }
+  .updated { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   .stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 0.9rem 1.5rem; }
   .stats div { border-top: 1px solid var(--line); padding-top: 0.5rem; }
   dt { color: var(--muted); font-size: 0.85rem; }

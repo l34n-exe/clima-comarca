@@ -32,12 +32,28 @@
   let loadError = $state("");
   let requestId = 0;
   let popstateHandler;
+  const STORAGE_KEY = "clima-comarca:location";
+
+  function remember(slug) {
+    try {
+      localStorage.setItem(STORAGE_KEY, slug);
+    } catch {
+      // Sin almacenamiento disponible (modo privado, etc.)
+    }
+  }
+
+  $effect(() => {
+    document.title = selected
+      ? `Clima en ${selected.nombre} · Comarca Weather`
+      : "Comarca Weather";
+  });
 
   const value = (r) => (r.status === "fulfilled" ? r.value : null);
   const failure = (r) => (r.status === "rejected" ? r.reason.message : "");
 
   async function select(location) {
     selected = location;
+    if (location) remember(location.slug);
     const id = ++requestId;
     weather = null;
     forecast = null;
@@ -105,8 +121,18 @@
       locationsLoaded = true;
       if (locations.length === 0) return;
       const slug = window.location.hash.slice(1);
+      let stored = null;
+      try {
+        stored = localStorage.getItem(STORAGE_KEY);
+      } catch {
+        // Sin almacenamiento disponible
+      }
       const fromHash = locations.find((location) => location.slug === slug);
-      const initial = fromHash ?? locations.find((l) => l.slug === "viedma") ?? locations[0];
+      const initial =
+        fromHash ??
+        locations.find((l) => l.slug === stored) ??
+        locations.find((l) => l.slug === "viedma") ??
+        locations[0];
       if (!fromHash) {
         window.history.replaceState(null, "", `#${initial.slug}`);
       }
@@ -138,17 +164,32 @@
           >Reintentar</button
         >
       {:else if weather}<CurrentWeather data={weather} />
-      {:else}<p class="note">Cargando el clima…</p>{/if}
+      {:else}
+        <div class="skel-card" aria-hidden="true">
+          <div class="skel skel-temp"></div>
+          <div class="skel-stats">
+            {#each [0, 1, 2, 3] as i (i)}
+              <div class="skel-stat">
+                <div class="skel skel-line"></div>
+                <div class="skel skel-line"></div>
+              </div>
+            {/each}
+          </div>
+        </div>
+        <span class="sr">Cargando el clima…</span>
+      {/if}
 
       {#if observation}
         <Observation data={observation} modelTemp={weather?.temp} />
       {:else if errors.observation}
-        <p class="note">No se pudo obtener la observación real por ahora.</p>
+        <p class="error" role="alert">{errors.observation}</p>
+        <button type="button" onclick={() => select(selected)}>Reintentar</button>
       {/if}
       {#if models}
         <ModelSpread data={models} />
       {:else if errors.models}
-        <p class="note">No se pudo cargar la comparación de modelos.</p>
+        <p class="error" role="alert">{errors.models}</p>
+        <button type="button" onclick={() => select(selected)}>Reintentar</button>
       {/if}
     </section>
 
@@ -162,7 +203,8 @@
           >
         {:else if tides}
           {#await loadTideChart()}
-            <p class="note">Cargando el gráfico…</p>
+            <div class="skel skel-chart" aria-hidden="true"></div>
+            <span class="sr">Cargando el gráfico…</span>
           {:then module}
             {@const Chart = module.default}
             <Chart {tides} />
@@ -170,8 +212,12 @@
             <p class="error" role="alert">
               No se pudo cargar el gráfico. Recargá la página para reintentar.
             </p>
+            <button type="button" onclick={() => select(selected)}>Reintentar</button>
           {/await}
-        {:else}<p class="note">Cargando las mareas…</p>{/if}
+        {:else}
+          <div class="skel skel-chart" aria-hidden="true"></div>
+          <span class="sr">Cargando las mareas…</span>
+        {/if}
       </section>
     {/if}
 
@@ -179,17 +225,23 @@
       <h2>Próximas 24 horas</h2>
       {#if errors.forecast}
         <p class="error" role="alert">{errors.forecast}</p>
+        <button type="button" onclick={() => select(selected)}>Reintentar</button>
       {:else if forecast}
         {#await loadHourlyForecast()}
-          <p class="note">Cargando el gráfico…</p>
+          <div class="skel skel-chart skel-chart-sm" aria-hidden="true"></div>
+          <div class="skel skel-chart skel-chart-sm" aria-hidden="true"></div>
+          <span class="sr">Cargando el gráfico…</span>
         {:then module}
           {@const HourlyForecast = module.default}
           <HourlyForecast hours={forecast.horas} />
         {:catch}
           <p class="error" role="alert">No se pudo cargar el gráfico horario.</p>
+          <button type="button" onclick={() => select(selected)}>Reintentar</button>
         {/await}
       {:else}
-        <p class="note">Cargando el pronóstico horario…</p>
+        <div class="skel skel-chart skel-chart-sm" aria-hidden="true"></div>
+        <div class="skel skel-chart skel-chart-sm" aria-hidden="true"></div>
+        <span class="sr">Cargando el pronóstico horario…</span>
       {/if}
     </section>
 
@@ -201,7 +253,18 @@
           >Reintentar</button
         >
       {:else if forecast}<ForecastList days={forecast.dias} stale={forecast.stale} />
-      {:else}<p class="note">Cargando el pronóstico…</p>{/if}
+      {:else}
+        <div class="skel-rows" aria-hidden="true">
+          {#each [0, 1, 2, 3, 4, 5, 6] as i (i)}
+            <div class="skel skel-row"></div>
+          {/each}
+        </div>
+        <span class="sr">Cargando el pronóstico…</span>
+      {/if}
     </section>
   {/if}
 </main>
+
+<footer class="attribution">
+  Datos: Open-Meteo (pronóstico y mareas) · NOAA (observaciones METAR)
+</footer>

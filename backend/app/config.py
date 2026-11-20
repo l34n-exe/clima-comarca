@@ -41,6 +41,9 @@ class Config:
     OBSERVATION_MAX_AGE_MIN = _integer_env("OBSERVATION_MAX_AGE_MIN", 180)
     TIMEZONE = "America/Argentina/Buenos_Aires"
     HTTP_TIMEOUT = _integer_env("HTTP_TIMEOUT", 8)
+    # Reintentos ante fallos transitorios de los proveedores (5xx, red)
+    HTTP_RETRIES = _integer_env("HTTP_RETRIES", 3)
+    HTTP_RETRY_BACKOFF = float(os.getenv("HTTP_RETRY_BACKOFF", "0.5"))
 
     @staticmethod
     def validate(config):
@@ -62,6 +65,18 @@ class Config:
             raise ValueError("HTTP_TIMEOUT debe ser un número entero")
         if config["HTTP_TIMEOUT"] <= 0:
             raise ValueError("HTTP_TIMEOUT debe ser mayor que cero")
+        if isinstance(config["HTTP_RETRIES"], bool) or not isinstance(
+            config["HTTP_RETRIES"], int
+        ):
+            raise ValueError("HTTP_RETRIES debe ser un número entero")
+        if config["HTTP_RETRIES"] < 1:
+            raise ValueError("HTTP_RETRIES debe ser al menos 1")
+        if not isinstance(config["HTTP_RETRY_BACKOFF"], (int, float)) or isinstance(
+            config["HTTP_RETRY_BACKOFF"], bool
+        ):
+            raise ValueError("HTTP_RETRY_BACKOFF debe ser un número")
+        if config["HTTP_RETRY_BACKOFF"] < 0:
+            raise ValueError("HTTP_RETRY_BACKOFF no puede ser negativo")
         if not isinstance(config["WEATHER_MODELS"], (list, tuple)):
             raise ValueError("WEATHER_MODELS debe ser una lista de modelos")
         if len(config["WEATHER_MODELS"]) < 2:

@@ -1,8 +1,6 @@
 <script>
-  import { num, compass } from "../utils/format.js";
+  import { num, compass, ago } from "../utils/format.js";
   let { data, modelTemp = null } = $props();
-
-  const ago = (min) => (min < 90 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`);
   let wind = $derived(
     data.viento_kmh == null
       ? ""

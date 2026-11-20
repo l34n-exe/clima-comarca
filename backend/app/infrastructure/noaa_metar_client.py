@@ -2,10 +2,10 @@ import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-import requests
 from flask import current_app
 
 from ..core.exceptions import WeatherError
+from . import http
 
 KMH_PER_KNOT = 1.852
 _STATION = re.compile(r"^[A-Z]{4}$")
@@ -54,15 +54,7 @@ def fetch_observation(location):
     station = location.get("estacion")
     if not isinstance(station, str) or not _STATION.match(station):
         raise WeatherError("Esta localidad no tiene una estación de observación válida")
-    try:
-        response = requests.get(
-            current_app.config["METAR_URL"].format(station=station),
-            timeout=current_app.config["HTTP_TIMEOUT"],
-        )
-        response.raise_for_status()
-        text = response.text
-    except requests.RequestException as exc:
-        raise WeatherError(str(exc)) from exc
+    text = http.get(current_app.config["METAR_URL"].format(station=station)).text
 
     data = parse_decoded(text)
     data["localidad"] = location["nombre"]

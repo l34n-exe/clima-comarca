@@ -67,11 +67,9 @@
 <p class="note">Alturas respecto del nivel medio del mar. La línea vertical marca el momento actual. {tides.aviso}</p>
 
 <style>
-  /* LayerChart toma sus colores de estas variables; acá se ajustan a la banda oscura */
+  /* Los colores de LayerChart (--color-primary, --color-surface-*) están en
+     :root (app.css) porque el tooltip se renderiza fuera de este componente */
   .chart {
     height: 280px;
-    --color-primary: var(--accent);
-    --color-surface-content: var(--band-ink);
-    --color-surface-100: var(--band);
   }
 </style>

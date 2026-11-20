@@ -1,10 +1,13 @@
 const BASE = '/api/v1';
+// Si el backend no responde en 15 s, se corta y se muestra el error
+// en vez de dejar la pantalla cargando para siempre
+const TIMEOUT_MS = 15000;
 
 // Todas las llamadas pasan por acá: un solo lugar para manejar errores
 async function get(path) {
   let res;
   try {
-    res = await fetch(BASE + path);
+    res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     throw new Error('No se pudo conectar con el servidor.');
   }

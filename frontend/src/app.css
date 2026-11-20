@@ -5,7 +5,13 @@
   --temp-line: var(--accent);
   --wind-line: var(--band);
   --gust-line: var(--ink);
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  /* LayerChart: el tooltip se portaliza a <body>, fuera del gráfico,
+     así que estos colores tienen que vivir en :root para que los herede */
+  --color-primary: var(--accent);
+  --color-surface-100: var(--band);
+  --color-surface-300: var(--band);
+  --color-surface-content: var(--band-ink);
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
   color: var(--ink); background: var(--bg); line-height: 1.5;
 }
 @media (prefers-color-scheme: dark) {
@@ -64,6 +70,10 @@ header > p { color: var(--muted); margin: 0.4rem 0 1.5rem; max-width: 60ch; }
 
 main { padding-bottom: 4rem; }
 main > section { padding-block: 1.5rem; }
+.attribution {
+  width: min(960px, 100% - 2rem); margin: 0 auto; padding-block: 1rem 2rem;
+  color: var(--muted); font-size: 0.8rem; text-align: center;
+}
 .detail { color: var(--muted); margin: 0.3rem 0 0; max-width: 60ch; }
 .note { color: var(--muted); font-size: 0.9rem; max-width: 70ch; }
 .error { color: var(--err); font-weight: 600; }
@@ -94,10 +104,53 @@ main > .tides { width: 100%; background: var(--band); color: var(--band-ink); pa
 
 .hourly h2 { font-size: 1.6rem; margin-bottom: 1rem; }
 .hourly-series { margin-top: 0.75rem; }
+.chart-wrap { position: relative; }
 .hourly-chart { height: 150px; width: 100%; display: block; overflow: visible; }
+/* Marcas de máximo/mínimo y tooltip de las curvas de 24 horas */
+.peak {
+  position: absolute; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.6rem; height: 1.25rem; padding: 0 0.3rem;
+  font-size: 0.72rem; font-weight: 700; line-height: 1;
+  color: var(--ink); background: var(--bg);
+  border: 1.5px solid currentColor; border-radius: 999px;
+  pointer-events: none; white-space: nowrap;
+}
+.peak::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; margin-right: 2px; }
+.peak.temp { color: #c47a00; }
+.peak.viento { color: #0866b6; }
+.peak.rafaga { color: #8a3d8f; }
+.tip {
+  position: absolute; top: 4px; transform: translateX(-50%);
+  padding: 0.2rem 0.55rem; border-radius: 6px;
+  background: var(--ink); color: var(--bg);
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+  pointer-events: none; z-index: 2;
+}
 .hourly-legend { display: flex; flex-wrap: wrap; gap: 1rem; color: var(--muted); font-size: 0.9rem; }
 .hourly-legend span::before { content: ""; display: inline-block; width: 0.8rem; height: 0.2rem; background: var(--legend-color); margin: 0 0.4rem 0.2rem 0; }
 .hourly-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.8rem; }
+
+/* Esqueletos de carga: mismo lugar que ocupa el contenido real */
+.skel { position: relative; overflow: hidden; background: var(--line); border-radius: 6px; opacity: 0.45; }
+.skel::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bg) 55%, transparent), transparent);
+  transform: translateX(-100%); animation: skel-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skel-sweep { to { transform: translateX(100%); } }
+.skel-card { display: grid; grid-template-columns: auto 1fr; gap: 1rem clamp(1.5rem, 5vw, 3.5rem); align-items: end; }
+.skel-temp { width: min(10rem, 55vw); height: 6.5rem; border-radius: 10px; }
+.skel-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 0.9rem 1.5rem; }
+.skel-stat { border-top: 1px solid var(--line); padding-top: 0.5rem; display: grid; gap: 0.55rem; }
+.skel-line { height: 0.85rem; }
+.skel-line + .skel-line { height: 1.15rem; width: 65%; }
+.skel-rows { display: grid; gap: 0.4rem; }
+.skel-row { height: 2.75rem; }
+.skel-chart { height: 280px; border-radius: 10px; }
+.skel-chart-sm { height: 150px; margin-top: 0.75rem; }
+@media (max-width: 640px) { .skel-card { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .skel::after { animation: none; } }
 
 .forecast h2 { font-size: 1.6rem; margin-bottom: 1rem; }
 .scroll { overflow-x: auto; }

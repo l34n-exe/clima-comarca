@@ -6,23 +6,55 @@ from ..core.exceptions import WeatherError
 from ..infrastructure import noaa_metar_client, open_meteo_client
 from . import cache_service
 
+# Cuánto se espera a que otro proceso termine de llenar el caché
+# antes de salir a buscar el dato por nuestra cuenta
+_LOCK_WAIT_SECONDS = 2.0
+_LOCK_POLL_SECONDS = 0.3
+
+
+def _fresh(envelope, ttl):
+    return envelope and time.time() - envelope["saved_at"] < ttl
+
 
 def _get_with_cache(kind, location, ttl, fetch):
     key = f"weather:{kind}:{location['slug']}"
     envelope = cache_service.read(key)
 
-    if envelope and time.time() - envelope["saved_at"] < ttl:
+    if _fresh(envelope, ttl):
         return {**envelope["data"], "stale": False}
 
-    try:
-        data = fetch(location)
-    except WeatherError:
-        if envelope:
-            return {**envelope["data"], "stale": True}
-        raise
+    locked = cache_service.acquire_lock(key, 30)
+    if not locked:
+        # Otro proceso está actualizando este dato: esperar a que llene el
+        # caché, reintentando el candado por si se liberó
+        deadline = time.monotonic() + _LOCK_WAIT_SECONDS
+        while time.monotonic() < deadline:
+            time.sleep(_LOCK_POLL_SECONDS)
+            envelope = cache_service.read(key)
+            if _fresh(envelope, ttl):
+                return {**envelope["data"], "stale": False}
+            locked = cache_service.acquire_lock(key, 30)
+            if locked:
+                break
+        envelope = cache_service.read(key)
 
-    cache_service.write(key, data, ttl + current_app.config["CACHE_STALE_EXTRA"])
-    return {**data, "stale": False}
+    try:
+        # Releer adentro del candado: otro proceso pudo haber llenado el caché
+        # entre la primera lectura y la adquisición del candado
+        envelope = cache_service.read(key)
+        if _fresh(envelope, ttl):
+            return {**envelope["data"], "stale": False}
+        try:
+            data = fetch(location)
+        except WeatherError:
+            if envelope:
+                return {**envelope["data"], "stale": True}
+            raise
+        cache_service.write(key, data, ttl + current_app.config["CACHE_STALE_EXTRA"])
+        return {**data, "stale": False}
+    finally:
+        if locked:
+            cache_service.release_lock(key)
 
 
 def get_current(location):

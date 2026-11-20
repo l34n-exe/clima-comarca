@@ -1,7 +1,7 @@
 import math
 
 from app.infrastructure import open_meteo_client
-from app.services import tides
+from app.utils.tides import find_extremes
 
 PERIOD = 12.42  # horas, ciclo de marea semidiurna
 
@@ -14,7 +14,7 @@ def synthetic(hours=72):
 
 def test_find_extremes_alternate_and_spacing():
     times, heights = synthetic()
-    extremes = tides.find_extremes(times, heights)
+    extremes = find_extremes(times, heights)
 
     kinds = [e["tipo"] for e in extremes]
     assert kinds[0] == "pleamar"
@@ -29,7 +29,7 @@ def test_find_extremes_alternate_and_spacing():
 
 def test_first_high_tide_is_close_to_real_peak():
     times, heights = synthetic()
-    first = tides.find_extremes(times, heights)[0]
+    first = find_extremes(times, heights)[0]
     # El pico real cae a las 03:06 (PERIOD / 4 horas)
     assert first["hora"].endswith(("03:00", "03:01", "03:02", "03:03", "03:04",
                                    "03:05", "03:06", "03:07", "03:08", "03:09", "03:10"))

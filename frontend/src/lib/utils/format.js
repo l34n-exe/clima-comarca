@@ -16,3 +16,14 @@ export const compass = (deg) => ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'][Mat
 export const nowAR = () =>
   new Date().toLocaleString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' })
     .replace(' ', 'T').slice(0, 16);
+
+// Minutos transcurridos desde una hora local de Argentina ("YYYY-MM-DDTHH:MM").
+// Se parsean ambas como UTC: la diferencia no cambia al sumar el mismo offset.
+export const minutesAgo = (iso) => {
+  const then = Date.parse(`${String(iso).slice(0, 16)}:00Z`);
+  if (Number.isNaN(then)) return null;
+  return Math.max(0, Math.round((Date.parse(`${nowAR()}:00Z`) - then) / 60000));
+};
+
+export const ago = (min) =>
+  min < 90 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`;
