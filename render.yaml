@@ -1,0 +1,48 @@
+# Blueprint de Render (render.com) — deploy gratis sin tarjeta.
+# Render lee este archivo al crear el servicio desde el repo de GitHub.
+#
+# Arquitectura resultante:
+#   navegador → web (nginx, público) → pserv (backend Flask, solo red privada)
+#                                        → keyvalue (Redis, solo red privada)
+#
+# Ojo con el plan gratis:
+#   - El web service duerme tras 15 min sin tráfico y tarda ~1 min en despertar.
+#   - La Key Value gratis expira a los 30 días (se puede renovar; el caché y el
+#     historial de precisión se regeneran solos).
+
+services:
+  - type: keyvalue
+    name: clima-redis
+    # Sin IPs permitidas: solo accesible por la red privada de Render
+    ipAllowList: []
+    plan: free
+
+  - type: pserv
+    name: clima-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: clima-redis
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: https://clima-comarca.onrender.com
+
+  - type: web
+    name: clima-comarca
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    healthCheckPath: /
+    envVars:
+      - key: API_UPSTREAM
+        fromService:
+          type: pserv
+          name: clima-backend
+          property: hostport

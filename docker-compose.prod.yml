@@ -1,0 +1,54 @@
+# Compose para publicar en un VPS o servicio con Docker (Render, Fly.io, etc.).
+# A diferencia del compose de desarrollo:
+#   - no expone Redis ni el backend al exterior (solo el frontend en :80)
+#   - reinicia los servicios automáticamente
+#   - usa .env.production o las variables del servicio
+#
+# Uso típico en un VPS detrás de un proxy inverso (Caddy/nginx/Traefik):
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# En servicios tipo Render/Fly.io normalmente se despliega cada servicio por
+# separado; este archivo sirve de referencia de qué necesita cada uno.
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: production
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      HTTP_TIMEOUT: ${HTTP_TIMEOUT:-10}
+      HTTP_RETRIES: ${HTTP_RETRIES:-3}
+      HTTP_RETRY_BACKOFF: ${HTTP_RETRY_BACKOFF:-0.5}
+      WEATHER_MODELS: ${WEATHER_MODELS:-}
+      METAR_URL: ${METAR_URL:-}
+      OBSERVATION_MAX_AGE_MIN: ${OBSERVATION_MAX_AGE_MIN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      # nginx resuelve esto al arrancar; si el backend cambia de host, ajustar
+      API_UPSTREAM: backend:5000
+    depends_on:
+      - backend
+
+volumes:
+  redis-data:

@@ -1,7 +1,8 @@
-from flask import jsonify
+from flask import jsonify, request
 
 from ...core.exceptions import WeatherError
-from ...services import locations_service, weather_service
+from ...services import accuracy_service, locations_service, weather_service
+from ..schemas.accuracy_schema import serialize_accuracy
 from ..schemas.models_schema import serialize_models
 from ..schemas.observation_schema import serialize_observation
 from .. import api_bp
@@ -38,3 +39,19 @@ def observation(slug):
         "No se pudo obtener la observación por ahora",
         needs_station=True,
     )
+
+
+@api_bp.get("/accuracy/<slug>")
+def accuracy(slug):
+    location = locations_service.get_location(slug)
+    if location is None:
+        return jsonify({"error": "Localidad no encontrada"}), 404
+    if not location.get("estacion"):
+        return jsonify({"error": "Esta localidad no tiene estación de observación"}), 404
+    days = request.args.get("dias", 7, type=int)
+    days = min(max(days or 7, 1), 30)
+    try:
+        accuracy_service.record(location)
+        return jsonify(serialize_accuracy(accuracy_service.stats(location, days)))
+    except WeatherError:
+        return jsonify({"error": "No se pudo calcular la precisión por ahora"}), 502

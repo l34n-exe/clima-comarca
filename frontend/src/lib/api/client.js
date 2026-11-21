@@ -22,3 +22,4 @@ export const getForecast = (slug) => get(`/forecast/${slug}`);
 export const getTides = (slug) => get(`/tides/${slug}`);
 export const getModels = (slug) => get(`/models/${slug}`);
 export const getObservation = (slug) => get(`/observation/${slug}`);
+export const getAccuracy = (slug) => get(`/accuracy/${slug}`);

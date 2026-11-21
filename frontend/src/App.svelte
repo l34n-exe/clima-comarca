@@ -7,11 +7,13 @@
     getTides,
     getModels,
     getObservation,
+    getAccuracy,
   } from "./lib/api/client.js";
   import CurrentWeather from "./lib/components/CurrentWeather.svelte";
   import ForecastList from "./lib/components/ForecastList.svelte";
   import ModelSpread from "./lib/components/ModelSpread.svelte";
   import Observation from "./lib/components/Observation.svelte";
+  import Accuracy from "./lib/components/Accuracy.svelte";
   import SearchBar from "./lib/components/SearchBar.svelte";
   import Hero from "./lib/components/Hero.svelte";
   // El gráfico de mareas (LayerChart) pesa mucho: se descarga recién
@@ -27,6 +29,7 @@
   let tides = $state(null);
   let models = $state(null);
   let observation = $state(null);
+  let accuracy = $state(null);
   let errors = $state({});
   let loading = $state(false);
   let loadError = $state("");
@@ -60,6 +63,7 @@
     tides = null;
     models = null;
     observation = null;
+    accuracy = null;
     errors = {};
     if (!location) {
       loading = false;
@@ -69,7 +73,7 @@
     // Se empieza a descargar el gráfico en paralelo con los datos, así está
     // listo cuando llegan. Si falla, el bloque {#await} de abajo lo informa.
     if (location.tipo === "playa") loadTideChart().catch(() => {});
-    const [w, f, t, mo, ob] = await Promise.allSettled([
+    const [w, f, t, mo, ob, ac] = await Promise.allSettled([
       getWeather(location.slug),
       getForecast(location.slug),
       location.tipo === "playa"
@@ -79,6 +83,9 @@
       location.observacion
         ? getObservation(location.slug)
         : Promise.resolve(null),
+      location.observacion
+        ? getAccuracy(location.slug)
+        : Promise.resolve(null),
     ]);
     if (id !== requestId) return; // llegó tarde: ya se eligió otra localidad
     weather = value(w);
@@ -86,12 +93,14 @@
     tides = value(t);
     models = value(mo);
     observation = value(ob);
+    accuracy = value(ac);
     errors = {
       weather: failure(w),
       forecast: failure(f),
       tides: failure(t),
       models: failure(mo),
       observation: failure(ob),
+      accuracy: failure(ac),
     };
     loading = false;
   }
@@ -190,6 +199,11 @@
       {:else if errors.models}
         <p class="error" role="alert">{errors.models}</p>
         <button type="button" onclick={() => select(selected)}>Reintentar</button>
+      {/if}
+      {#if accuracy}
+        <Accuracy data={accuracy} />
+      {:else if errors.accuracy}
+        <p class="note">No se pudo cargar la precisión del modelo.</p>
       {/if}
     </section>
 
