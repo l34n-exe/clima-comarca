@@ -72,9 +72,6 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 
 ## Capturas
 
-<!-- Agregá capturas en docs/screenshots/ y reemplazá los enlaces.
-     Recomendado: 1600×900 o 1920×1080, modo claro u oscuro. -->
-
 | Escritorio | Móvil |
 | ---------- | ----- |
 | ![Vista escritorio](docs/screenshots/desktop.png) | ![Vista móvil](docs/screenshots/mobile.png) |
