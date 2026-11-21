@@ -22,7 +22,6 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    healthCheckPath: /api/v1/health
     envVars:
       - key: FLASK_ENV
         value: production
