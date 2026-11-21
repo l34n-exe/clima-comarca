@@ -1,3 +1,4 @@
+import pytest  # pyright: ignore[reportMissingImports]
 from datetime import datetime, timedelta, timezone
 
 from app.core.exceptions import WeatherError
@@ -128,7 +129,18 @@ def test_stats_empty(app):
     assert stats["por_dia"] == []
 
 
-def test_accuracy_endpoint(client, monkeypatch):
+@pytest.fixture
+def sync_record(monkeypatch):
+    """El endpoint graba en background; en tests lo hacemos síncrono."""
+
+    def sync(app, location):
+        with app.app_context():
+            accuracy_service.record(location)
+
+    monkeypatch.setattr(accuracy_service, "record_in_background", sync)
+
+
+def test_accuracy_endpoint(client, monkeypatch, sync_record):
     monkeypatch.setattr(weather_service, "get_current", lambda loc: current_payload())
     monkeypatch.setattr(weather_service, "get_observation", lambda loc: obs_payload())
     res = client.get("/api/v1/accuracy/viedma")
@@ -140,14 +152,14 @@ def test_accuracy_endpoint(client, monkeypatch):
     assert body["stale"] is False
 
 
-def test_accuracy_endpoint_unknown_and_no_station(client, monkeypatch):
+def test_accuracy_endpoint_unknown_and_no_station(client, monkeypatch, sync_record):
     monkeypatch.setattr(weather_service, "get_current", lambda loc: current_payload())
     monkeypatch.setattr(weather_service, "get_observation", lambda loc: obs_payload())
     assert client.get("/api/v1/accuracy/no-existe").status_code == 404
     assert client.get("/api/v1/accuracy/el-condor").status_code == 404
 
 
-def test_accuracy_endpoint_days_param(client, monkeypatch):
+def test_accuracy_endpoint_days_param(client, monkeypatch, sync_record):
     monkeypatch.setattr(weather_service, "get_current", lambda loc: current_payload())
     monkeypatch.setattr(weather_service, "get_observation", lambda loc: obs_payload())
     res = client.get("/api/v1/accuracy/viedma?dias=30")

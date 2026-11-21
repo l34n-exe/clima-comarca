@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 
 from ...core.exceptions import WeatherError
 from ...services import accuracy_service, locations_service, weather_service
@@ -51,7 +51,7 @@ def accuracy(slug):
     days = request.args.get("dias", 7, type=int)
     days = min(max(days or 7, 1), 30)
     try:
-        accuracy_service.record(location)
+        accuracy_service.record_in_background(current_app._get_current_object(), location)
         return jsonify(serialize_accuracy(accuracy_service.stats(location, days)))
     except WeatherError:
         return jsonify({"error": "No se pudo calcular la precisión por ahora"}), 502

@@ -1,4 +1,5 @@
 import json
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -65,6 +66,20 @@ def record(location):
     get_redis().hset(key, bucket, json.dumps(entry))
     get_redis().expire(key, RETENTION_SECONDS)
     return True
+
+
+def record_in_background(app, location):
+    """Llama a los proveedores puede tardar (reintentos, rate limit):
+    se hace en un hilo para no bloquear el request ni matar el worker."""
+
+    def target():
+        with app.app_context():
+            try:
+                record(location)
+            except Exception:
+                app.logger.warning("No se pudo registrar la precisión", exc_info=True)
+
+    threading.Thread(target=target, daemon=True).start()
 
 
 def stats(location, days):
