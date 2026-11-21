@@ -2,8 +2,11 @@
 # Render lee este archivo al crear el servicio desde el repo de GitHub.
 #
 # Arquitectura resultante:
-#   navegador → web (nginx, público) → pserv (backend Flask, solo red privada)
-#                                        → keyvalue (Redis, solo red privada)
+#   navegador → web (nginx, público) → web (backend Flask, URL pública)
+#                                        → keyvalue (Redis)
+# Los private services no tienen plan gratis en Render, así que el backend
+# también es un web service: el navegador nunca lo llama directo, nginx le
+# reenvía /api por HTTPS.
 #
 # Ojo con el plan gratis:
 #   - El web service duerme tras 15 min sin tráfico y tarda ~1 min en despertar.
@@ -17,11 +20,13 @@ services:
     ipAllowList: []
     plan: free
 
-  - type: pserv
+  - type: web
     name: clima-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/v1/health
     envVars:
       - key: FLASK_ENV
         value: production
@@ -38,10 +43,8 @@ services:
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
+    plan: free
     healthCheckPath: /
     envVars:
       - key: API_UPSTREAM
-        fromService:
-          type: pserv
-          name: clima-backend
-          property: hostport
+        value: https://clima-backend.onrender.com
