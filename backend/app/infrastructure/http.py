@@ -31,4 +31,5 @@ def get(url, params=None):
                 break
         if attempt < retries - 1:
             time.sleep(backoff * (2**attempt))
+    current_app.logger.warning("Proveedor inaccesible tras %s intentos: %s %s", retries, url, error)
     raise WeatherError(str(error)) from error
