@@ -36,7 +36,7 @@ def get(url, params=None):
                 headers = getattr(exc.response, "headers", None) or {}
                 retry_after = headers.get("Retry-After")
                 if retry_after and retry_after.isdigit():
-                    wait = max(wait, min(int(retry_after), 30))
+                    wait = max(wait, min(int(retry_after), 10))
             if attempt < retries - 1:
                 time.sleep(wait)
             continue
