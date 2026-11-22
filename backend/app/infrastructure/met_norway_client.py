@@ -140,9 +140,8 @@ def fetch_forecast(location):
             "hora": local,
             "temp": _require(instant, "air_temperature"),
             "viento_kmh": wind_kmh,
-            # MET Norway no informa ráfagas ni probabilidad: se usa el viento
-            # como aproximación y la precipitación horaria como señal binaria
-            "rafaga_kmh": wind_kmh,
+            # MET Norway no informa ráfagas: null, no un valor de relleno
+            "rafaga_kmh": None,
             "prob_lluvia": 100.0 if precip >= 0.1 else 0.0,
             "codigo": code,
             "precip_mm": precip,
@@ -178,6 +177,9 @@ def fetch_forecast(location):
         winds = [p["viento_kmh"] for p in points]
         sunrise, sunset = sunrise_sunset(day, location["lat"], location["lon"], current_app.config["TIMEZONE"])
         code = points[0]["codigo"]
+        # El frontend espera ISO completo (como Open-Meteo), no solo "HH:MM"
+        amanecer = f"{day.isoformat()}T{sunrise}" if sunrise else ""
+        atardecer = f"{day.isoformat()}T{sunset}" if sunset else ""
         days.append({
             "fecha": day.isoformat(),
             "max": max(temps),
@@ -185,9 +187,9 @@ def fetch_forecast(location):
             "lluvia_mm": round(precip_sum, 1),
             "prob_lluvia": 100.0 if precip_sum >= 0.5 else 0.0,
             "viento_max_kmh": max(winds),
-            "rafaga_max_kmh": max(winds),
-            "amanecer": sunrise or "--:--",
-            "atardecer": sunset or "--:--",
+            "rafaga_max_kmh": None,
+            "amanecer": amanecer,
+            "atardecer": atardecer,
             "codigo": code,
             "descripcion": _describe_wmo(code),
         })

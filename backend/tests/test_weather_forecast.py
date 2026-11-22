@@ -47,15 +47,36 @@ def test_fetch_forecast_includes_gusts_sun_times_and_next_24_hours(app, monkeypa
         )
 
     assert forecast["dias"][0]["rafaga_max_kmh"] == 48.0
+    assert forecast["dias"][0]["rafaga_max_kmh"] >= forecast["dias"][0]["viento_max_kmh"]
     assert forecast["dias"][0]["prob_lluvia"] == 35
     assert forecast["dias"][0]["amanecer"] == "2026-11-19T06:10"
+    assert forecast["dias"][0]["atardecer"] == "2026-11-19T20:15"
     assert len(forecast["horas"]) == 24
     assert forecast["horas"][0]["hora"] == payload["hourly"]["time"][1]
+    for hour in forecast["horas"]:
+        assert hour["rafaga_kmh"] is None or hour["rafaga_kmh"] >= hour["viento_kmh"]
 
 
-def test_fetch_forecast_rejects_missing_hourly_fields(app, monkeypatch):
+def test_fetch_forecast_without_gusts_returns_null(app, monkeypatch):
     payload = forecast_payload()
     del payload["hourly"]["wind_gusts_10m"]
+    payload["daily"]["wind_gusts_10m_max"] = [None] * len(payload["daily"]["time"])
+    monkeypatch.setattr(open_meteo_client, "_request", lambda url, params: payload)
+
+    with app.app_context():
+        forecast = open_meteo_client.fetch_forecast(
+            {"nombre": "Viedma", "lat": -40.8, "lon": -63.0}
+        )
+
+    assert forecast["dias"][0]["rafaga_max_kmh"] is None
+    assert forecast["horas"][0]["rafaga_kmh"] is None
+    for hour in forecast["horas"]:
+        assert hour["rafaga_kmh"] is None or hour["rafaga_kmh"] >= hour["viento_kmh"]
+
+
+def test_fetch_forecast_rejects_malformed_gusts(app, monkeypatch):
+    payload = forecast_payload()
+    payload["hourly"]["wind_gusts_10m"] = ["x"] * len(payload["hourly"]["time"])
     monkeypatch.setattr(open_meteo_client, "_request", lambda url, params: payload)
 
     with app.app_context(), pytest.raises(WeatherError, match="wind_gusts_10m"):

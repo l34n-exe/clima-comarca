@@ -5,6 +5,11 @@
   let lo = $derived(Math.min(...days.map((d) => d.min)));
   let hi = $derived(Math.max(...days.map((d) => d.max)));
   const pct = (v) => ((v - lo) / (hi - lo || 1)) * 100;
+  const timeOf = (value) => {
+    if (!value) return '';
+    const t = String(value);
+    return t.includes('T') ? t.slice(11, 16) : t.slice(0, 5);
+  };
 </script>
 
 <div class="scroll">
@@ -26,8 +31,10 @@
             </span>
           </td>
           <td class="nowrap">{num(d.lluvia_mm)} mm · {num(d.prob_lluvia, 0)} %</td>
-          <td class="nowrap">{num(d.viento_max_kmh, 0)} / {num(d.rafaga_max_kmh, 0)} km/h</td>
-          <td class="nowrap">{d.amanecer.slice(11, 16)} / {d.atardecer.slice(11, 16)}</td>
+          <td class="nowrap">
+            {num(d.viento_max_kmh, 0)} km/h{#if d.rafaga_max_kmh != null} · ráfagas {num(d.rafaga_max_kmh, 0)} km/h{/if}
+          </td>
+          <td class="nowrap">{timeOf(d.amanecer)} / {timeOf(d.atardecer)}</td>
         </tr>
       {/each}
     </tbody>

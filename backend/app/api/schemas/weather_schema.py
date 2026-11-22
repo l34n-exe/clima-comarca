@@ -12,7 +12,6 @@ from .validation import (
 _CURRENT_NUMBERS = ("temp", "sensacion", "humedad", "viento_kmh", "viento_dir")
 _FORECAST_NUMBERS = (
     "max", "min", "lluvia_mm", "prob_lluvia", "viento_max_kmh",
-    "rafaga_max_kmh",
 )
 
 
@@ -51,6 +50,10 @@ def serialize_forecast(payload):
             result_day[field] = require_number(
                 day.get(field), f"pronóstico.dias[{index}].{field}"
             )
+        gust = day.get("rafaga_max_kmh")
+        result_day["rafaga_max_kmh"] = (
+            None if gust is None else require_number(gust, f"pronóstico.dias[{index}].rafaga_max_kmh")
+        )
         for field in ("amanecer", "atardecer"):
             result_day[field] = require_text(
                 day.get(field), f"pronóstico.dias[{index}].{field}"
@@ -66,10 +69,14 @@ def serialize_forecast(payload):
         result_hour = {
             "hora": require_text(hour.get("hora"), f"pronóstico.horas[{index}].hora"),
         }
-        for field in ("temp", "viento_kmh", "rafaga_kmh", "prob_lluvia"):
+        for field in ("temp", "viento_kmh", "prob_lluvia"):
             result_hour[field] = require_number(
                 hour.get(field), f"pronóstico.horas[{index}].{field}"
             )
+        gust = hour.get("rafaga_kmh")
+        result_hour["rafaga_kmh"] = (
+            None if gust is None else require_number(gust, f"pronóstico.horas[{index}].rafaga_kmh")
+        )
         result_hours.append(result_hour)
 
     return {

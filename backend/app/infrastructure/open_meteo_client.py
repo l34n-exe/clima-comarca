@@ -118,13 +118,21 @@ def fetch_forecast(location):
             "precipitation_sum",
             "precipitation_probability_max",
             "wind_speed_10m_max",
-            "wind_gusts_10m_max",
         )
         dates = d["time"]
         if not isinstance(dates, list) or not all(
             isinstance(day, str) and day for day in dates
         ):
             raise WeatherError("Respuesta inesperada: daily.time no es una lista válida")
+        # Las ráfagas pueden venir null: se aceptan y quedan como None
+        gust_field = "wind_gusts_10m_max"
+        gusts = d.get(gust_field)
+        if not isinstance(gusts, list) or len(gusts) != len(dates):
+            raise WeatherError(
+                f"Respuesta inesperada: daily.{gust_field} no coincide con daily.time"
+            )
+        if any(value is not None and not _is_number(value) for value in gusts):
+            raise WeatherError(f"Respuesta inesperada: daily.{gust_field} inválido")
         for field in fields:
             values = d[field]
             if not isinstance(values, list) or len(values) != len(dates):
@@ -170,9 +178,19 @@ def fetch_forecast(location):
         hourly_fields = (
             "temperature_2m",
             "wind_speed_10m",
-            "wind_gusts_10m",
             "precipitation_probability",
         )
+        hourly_gusts = hourly.get("wind_gusts_10m")
+        if hourly_gusts is not None and (
+            not isinstance(hourly_gusts, list) or len(hourly_gusts) != len(times)
+        ):
+            raise WeatherError(
+                "Respuesta inesperada: hourly.wind_gusts_10m no coincide con hourly.time"
+            )
+        if hourly_gusts is not None and any(
+            value is not None and not _is_number(value) for value in hourly_gusts
+        ):
+            raise WeatherError("Respuesta inesperada: hourly.wind_gusts_10m inválido")
         if not isinstance(times, list) or not all(
             isinstance(value, str) and value for value in times
         ):
@@ -203,7 +221,7 @@ def fetch_forecast(location):
                 "hora": times[index],
                 "temp": hourly["temperature_2m"][index],
                 "viento_kmh": hourly["wind_speed_10m"][index],
-                "rafaga_kmh": hourly["wind_gusts_10m"][index],
+                "rafaga_kmh": hourly_gusts[index] if hourly_gusts else None,
                 "prob_lluvia": hourly["precipitation_probability"][index],
             }
             for index in range(start_index, start_index + 24)

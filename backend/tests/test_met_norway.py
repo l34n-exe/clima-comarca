@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest  # pyright: ignore[reportMissingImports]
 
 from app.core.exceptions import WeatherError
+from app.api.schemas.weather_schema import serialize_forecast
 from app.infrastructure import met_norway_client
 from app.services import weather_service
 
@@ -62,8 +63,82 @@ def test_fetch_forecast(app, monkeypatch):
     assert len(data["dias"]) >= 1
     day = data["dias"][0]
     assert day["max"] >= day["min"]
+    # MET Norway no informa ráfagas: deben ser null, nunca un relleno
+    assert all(h["rafaga_kmh"] is None for h in data["horas"])
+    assert day["rafaga_max_kmh"] is None
+    # Sol en ISO completo y no vacío (el frontend hace slice(11,16))
     assert day["amanecer"] and day["atardecer"]
+    assert len(day["amanecer"]) >= 16 and day["amanecer"][10] == "T"
     assert day["prob_lluvia"] in (0.0, 100.0)
+
+
+def test_forecast_gusts_never_below_wind(app, monkeypatch):
+    """Si algún día hay ráfagas, no pueden ser menores que el viento medio."""
+    timeseries = [entry(i) for i in range(48)]
+    monkeypatch.setattr(
+        met_norway_client.http,
+        "get",
+        lambda *a, **k: FakeResp({"properties": {"timeseries": timeseries}}),
+    )
+    with app.app_context():
+        data = met_norway_client.fetch_forecast(VIEDMA)
+    for h in data["horas"]:
+        if h["rafaga_kmh"] is not None:
+            assert h["rafaga_kmh"] >= h["viento_kmh"]
+
+
+def _forecast_day(**overrides):
+    day = {
+        "fecha": "2026-11-22",
+        "max": 20.0,
+        "min": 10.0,
+        "lluvia_mm": 0.0,
+        "prob_lluvia": 0.0,
+        "viento_max_kmh": 15.0,
+        "rafaga_max_kmh": None,
+        "amanecer": "2026-11-22T05:39",
+        "atardecer": "2026-11-22T20:16",
+        "codigo": 0,
+        "descripcion": "Despejado",
+    }
+    day.update(overrides)
+    return day
+
+
+def _hour():
+    return {
+        "hora": "2026-11-22T15:00",
+        "temp": 20.0,
+        "viento_kmh": 10.0,
+        "rafaga_kmh": None,
+        "prob_lluvia": 0.0,
+    }
+
+
+def test_schema_accepts_null_gusts(app):
+    with app.app_context():
+        payload = serialize_forecast(
+            {
+                "localidad": "Viedma",
+                "dias": [_forecast_day()],
+                "horas": [_hour()] * 24,
+                "stale": False,
+            }
+        )
+    assert payload["dias"][0]["rafaga_max_kmh"] is None
+    assert payload["horas"][0]["rafaga_kmh"] is None
+
+
+def test_schema_rejects_empty_sun(app):
+    with app.app_context(), pytest.raises(WeatherError):
+        serialize_forecast(
+            {
+                "localidad": "Viedma",
+                "dias": [_forecast_day(amanecer="")],
+                "horas": [_hour()] * 24,
+                "stale": False,
+            }
+        )
 
 
 class FakeResp:

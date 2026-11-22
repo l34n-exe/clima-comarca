@@ -9,16 +9,22 @@
   const yFor = (value, min, max) =>
     12 + ((max - value) / (max - min || 1)) * (H - 24);
   const line = (field, min, max) =>
-    hours.map((hour, index) => `${x(index)},${yFor(hour[field], min, max)}`).join(" ");
+    hours
+      .map((hour, index) => `${x(index)},${yFor(hour[field] ?? 0, min, max)}`)
+      .join(" ");
 
   let tempValues = $derived(hours.map((hour) => hour.temp));
   let tempMin = $derived(Math.min(...tempValues));
   let tempMax = $derived(Math.max(...tempValues));
   let windValues = $derived(hours.map((hour) => hour.viento_kmh));
-  let gustValues = $derived(hours.map((hour) => hour.rafaga_kmh));
+  // Algunos proveedores no informan ráfagas: si ninguna hora las tiene, se oculta la serie
+  let hasGusts = $derived(hours.some((hour) => hour.rafaga_kmh != null));
+  let gustValues = $derived(
+    hasGusts ? hours.map((hour) => hour.rafaga_kmh ?? 0) : [],
+  );
   let windMax = $derived(Math.max(...windValues, ...gustValues));
   let maxWind = $derived(Math.max(...windValues));
-  let maxGust = $derived(Math.max(...gustValues));
+  let maxGust = $derived(gustValues.length ? Math.max(...gustValues) : 0);
   let labels = $derived(
     hours.filter((_, index) => index % 4 === 0 || index === hours.length - 1),
   );
@@ -31,7 +37,9 @@
   ]);
   let windMarks = $derived([
     { index: firstIndexOf(windValues, maxWind), value: maxWind, kind: "viento" },
-    { index: firstIndexOf(gustValues, maxGust), value: maxGust, kind: "rafaga" },
+    ...(hasGusts
+      ? [{ index: firstIndexOf(gustValues, maxGust), value: maxGust, kind: "rafaga" }]
+      : []),
   ]);
 
   // Tooltip: índice de la hora más cercana y posición horizontal en px
@@ -91,7 +99,9 @@
   <p class="detail">Viento: 0–{num(windMax, 0)} km/h</p>
   <div class="hourly-legend">
     <span style="--legend-color:#0866b6">Viento medio</span>
-    <span style="--legend-color:#8a3d8f">Ráfagas</span>
+    {#if hasGusts}
+      <span style="--legend-color:#8a3d8f">Ráfagas</span>
+    {/if}
   </div>
   <div
     class="chart-wrap"
@@ -108,14 +118,16 @@
         stroke-width="2"
         vector-effect="non-scaling-stroke"
       />
-      <polyline
-        points={line("rafaga_kmh", 0, windMax)}
-        fill="none"
-        stroke="#8a3d8f"
-        stroke-width="2"
-        stroke-dasharray="5 4"
-        vector-effect="non-scaling-stroke"
-      />
+      {#if hasGusts}
+        <polyline
+          points={line("rafaga_kmh", 0, windMax)}
+          fill="none"
+          stroke="#8a3d8f"
+          stroke-width="2"
+          stroke-dasharray="5 4"
+          vector-effect="non-scaling-stroke"
+        />
+      {/if}
     </svg>
     {#each windMarks as mark (mark.kind)}
       <span
@@ -128,7 +140,7 @@
     {#if hoverWind}
       {@const h = hours[hoverWind.index]}
       <div class="tip" style="left:{hoverWind.px}px">
-        {h.hora.slice(11, 16)} · viento {num(h.viento_kmh, 0)} · ráfagas {num(h.rafaga_kmh, 0)} km/h
+        {h.hora.slice(11, 16)} · viento {num(h.viento_kmh, 0)}{#if h.rafaga_kmh != null} · ráfagas {num(h.rafaga_kmh, 0)} km/h{/if}
       </div>
     {/if}
   </div>
