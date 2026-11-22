@@ -1,9 +1,9 @@
 const BASE = '/api/v1';
-// Si el backend no responde en 45 s, se corta y se muestra el error
+// Si el backend no responde en 75 s, se corta y se muestra el error
 // en vez de dejar la pantalla cargando para siempre. El margen cubre
-// el cold start del free tier de Render (~1 min) y los reintentos
-// del proveedor cuando hay rate limit.
-const TIMEOUT_MS = 45000;
+// el cold start completo del free tier de Render (~1 min) y los
+// reintentos del proveedor cuando hay rate limit.
+const TIMEOUT_MS = 75000;
 
 // Todas las llamadas pasan por acá: un solo lugar para manejar errores
 async function get(path) {
@@ -11,7 +11,9 @@ async function get(path) {
   try {
     res = await fetch(BASE + path, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
-    throw new Error('No se pudo conectar con el servidor.');
+    throw new Error(
+      'El servidor se está despertando o no responde. Esperá un minuto y reintentá.',
+    );
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'El servidor devolvió un error.');
