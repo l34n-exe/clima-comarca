@@ -46,5 +46,8 @@ services:
     plan: free
     healthCheckPath: /
     envVars:
+      # URL pública real del servicio backend en Render (el nombre puede
+      # llevar sufijo si el nombre simple estaba ocupado). Si se recrea el
+      # servicio, actualizar con la URL del panel (Connect).
       - key: API_UPSTREAM
-        value: https://clima-backend.onrender.com
+        value: https://clima-backend-54jy.onrender.com
