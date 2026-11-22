@@ -18,7 +18,7 @@
     <p class="detail">
       Error promedio de los últimos {data.dias} días:
       <strong>{num(data.error_promedio_c, 1)} °C</strong> en {data.muestras}
-      mediciones horarias contra la estación METAR.
+      {data.muestras === 1 ? "medición" : "mediciones"} horarias contra la estación METAR.
       {#if data.sesgo_c != null}
         Sesgo: {num(data.sesgo_c, 1)} °C ({data.sesgo_c > 0 ? "sobreestima" : "subestima"}).
       {/if}

@@ -25,9 +25,9 @@
               <span>{num(d.max, 0)}°</span>
             </span>
           </td>
-          <td>{num(d.lluvia_mm)} mm · {num(d.prob_lluvia, 0)} %</td>
-          <td>{num(d.viento_max_kmh, 0)} / {num(d.rafaga_max_kmh, 0)} km/h</td>
-          <td>{d.amanecer.slice(11, 16)} / {d.atardecer.slice(11, 16)}</td>
+          <td class="nowrap">{num(d.lluvia_mm)} mm · {num(d.prob_lluvia, 0)} %</td>
+          <td class="nowrap">{num(d.viento_max_kmh, 0)} / {num(d.rafaga_max_kmh, 0)} km/h</td>
+          <td class="nowrap">{d.amanecer.slice(11, 16)} / {d.atardecer.slice(11, 16)}</td>
         </tr>
       {/each}
     </tbody>
@@ -36,3 +36,7 @@
 {#if stale}
   <p class="note">No se pudo actualizar. Se muestran datos de la última consulta exitosa.</p>
 {/if}
+
+<style>
+  .nowrap { white-space: nowrap; }
+</style>

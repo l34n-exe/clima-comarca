@@ -200,11 +200,6 @@
         <p class="error" role="alert">{errors.models}</p>
         <button type="button" onclick={() => select(selected)}>Reintentar</button>
       {/if}
-      {#if accuracy}
-        <Accuracy data={accuracy} />
-      {:else if errors.accuracy}
-        <p class="note">No se pudo cargar la precisión del modelo.</p>
-      {/if}
     </section>
 
     {#if selected.tipo === "playa"}
@@ -276,6 +271,16 @@
         <span class="sr">Cargando el pronóstico…</span>
       {/if}
     </section>
+
+    {#if selected?.observacion}
+      <section class="accuracy-section">
+        {#if accuracy}
+          <Accuracy data={accuracy} />
+        {:else if errors.accuracy}
+          <p class="note">No se pudo cargar la precisión del modelo.</p>
+        {/if}
+      </section>
+    {/if}
   {/if}
 </main>
 
