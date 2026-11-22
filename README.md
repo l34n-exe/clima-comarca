@@ -71,6 +71,7 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 - **Candado anti-stampede**: al vencer una clave, un `SET NX EX` en Redis hace que un solo request salga a buscar el dato; el resto espera y lee el caché.
 - **Mareas como estimación**: salen del modelo marino global de Open-Meteo (~8 km de resolución), no de tablas de mareas locales. Sirven para planificar, no para navegar; la respuesta incluye un `aviso` y la sección correspondiente lo aclara.
 - **Precisión medida, no prometida**: en vez de decir "el modelo es bueno", la app registra cada hora la estimación vs. la observación METAR real de Viedma y muestra el error promedio de los últimos días. Los números se construyen con el uso.
+- **Proveedor de respaldo**: si Open-Meteo falla (rate limit, caída), el clima actual y el pronóstico se piden a MET Norway (yr.no). El respaldo no tiene comparación de modelos ni probabilidad de lluvia oficial: la probabilidad se estima por la precipitación prevista y las ráfagas igualan al viento. Si ambos proveedores fallan, se sirve el último dato cacheado marcado como `stale`.
 
 ## Capturas
 
