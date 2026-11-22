@@ -297,5 +297,7 @@
 
 <footer class="attribution">
   Datos: Open-Meteo (pronóstico y mareas) · MET Norway (respaldo) · NOAA (observaciones METAR)
-  {#if fuenteTexto}<br />Fuente actual del pronóstico: {fuenteTexto}{/if}
+  {#if selected}
+    <br />Fuente actual del pronóstico: {fuenteTexto || "sin datos todavía"}
+  {/if}
 </footer>
