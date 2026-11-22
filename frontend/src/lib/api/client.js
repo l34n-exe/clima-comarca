@@ -1,7 +1,9 @@
 const BASE = '/api/v1';
-// Si el backend no responde en 15 s, se corta y se muestra el error
-// en vez de dejar la pantalla cargando para siempre
-const TIMEOUT_MS = 15000;
+// Si el backend no responde en 45 s, se corta y se muestra el error
+// en vez de dejar la pantalla cargando para siempre. El margen cubre
+// el cold start del free tier de Render (~1 min) y los reintentos
+// del proveedor cuando hay rate limit.
+const TIMEOUT_MS = 45000;
 
 // Todas las llamadas pasan por acá: un solo lugar para manejar errores
 async function get(path) {
