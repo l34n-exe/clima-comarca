@@ -1,4 +1,4 @@
-from app.infrastructure import open_meteo_client
+from app.infrastructure import met_norway_client, open_meteo_client
 from tests.conftest import make_app
 
 FAKE = {
@@ -44,6 +44,7 @@ def test_stale_when_provider_fails(monkeypatch):
         raise open_meteo_client.WeatherError("caído")
 
     monkeypatch.setattr(open_meteo_client, "fetch_current", boom)
+    monkeypatch.setattr(met_norway_client, "fetch_current", boom)
     res = client.get("/api/v1/weather/viedma")
 
     assert res.status_code == 200
@@ -55,6 +56,7 @@ def test_502_when_provider_fails_and_no_cache(client, monkeypatch):
         raise open_meteo_client.WeatherError("caído")
 
     monkeypatch.setattr(open_meteo_client, "fetch_current", boom)
+    monkeypatch.setattr(met_norway_client, "fetch_current", boom)
     assert client.get("/api/v1/weather/viedma").status_code == 502
 
 

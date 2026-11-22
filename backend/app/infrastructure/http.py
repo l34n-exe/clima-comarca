@@ -15,7 +15,7 @@ def _retryable(exc):
     return status >= 500 or status == 429
 
 
-def get(url, params=None):
+def get(url, params=None, headers=None):
     """GET con timeout, reintentos y backoff exponencial ante fallos transitorios."""
     timeout = current_app.config["HTTP_TIMEOUT"]
     retries = current_app.config["HTTP_RETRIES"]
@@ -23,7 +23,7 @@ def get(url, params=None):
     error = None
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, timeout=timeout)
+            response = requests.get(url, params=params, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response
         except requests.RequestException as exc:

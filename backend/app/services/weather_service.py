@@ -3,7 +3,7 @@ import time
 from flask import current_app # type: ignore
 
 from ..core.exceptions import WeatherError
-from ..infrastructure import noaa_metar_client, open_meteo_client
+from ..infrastructure import met_norway_client, noaa_metar_client, open_meteo_client
 from . import cache_service
 
 # Cuánto se espera a que otro proceso termine de llenar el caché
@@ -57,12 +57,27 @@ def _get_with_cache(kind, location, ttl, fetch):
             cache_service.release_lock(key)
 
 
+def _with_fallback(primary, fallback):
+    """Si el proveedor principal falla (p. ej. Open-Meteo rate-limita la IP
+    del hosting), se intenta el respaldo. Si los dos fallan, se propaga el
+    error del respaldo."""
+
+    def fetch(location):
+        try:
+            return primary(location)
+        except WeatherError:
+            current_app.logger.info("Proveedor principal falló, probando respaldo")
+            return fallback(location)
+
+    return fetch
+
+
 def get_current(location):
     return _get_with_cache(
         "current",
         location,
         current_app.config["CACHE_TTL_CURRENT"],
-        open_meteo_client.fetch_current,
+        _with_fallback(open_meteo_client.fetch_current, met_norway_client.fetch_current),
     )
 
 
@@ -71,7 +86,7 @@ def get_forecast(location):
         "forecast-v2",
         location,
         current_app.config["CACHE_TTL_FORECAST"],
-        open_meteo_client.fetch_forecast,
+        _with_fallback(open_meteo_client.fetch_forecast, met_norway_client.fetch_forecast),
     )
 
 

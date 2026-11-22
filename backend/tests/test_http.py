@@ -21,7 +21,7 @@ class FakeResponse:
 def test_get_retries_on_5xx(app, monkeypatch):
     calls = []
 
-    def fake_get(url, params=None, timeout=None):
+    def fake_get(url, params=None, timeout=None, headers=None):
         calls.append(1)
         return FakeResponse(500) if len(calls) < 3 else FakeResponse(200, {"ok": True})
 
@@ -35,7 +35,7 @@ def test_get_retries_on_5xx(app, monkeypatch):
 def test_get_does_not_retry_4xx(app, monkeypatch):
     calls = []
 
-    def fake_get(url, params=None, timeout=None):
+    def fake_get(url, params=None, timeout=None, headers=None):
         calls.append(1)
         return FakeResponse(404)
 
@@ -49,7 +49,7 @@ def test_get_does_not_retry_4xx(app, monkeypatch):
 def test_get_retries_on_429(app, monkeypatch):
     calls = []
 
-    def fake_get(url, params=None, timeout=None):
+    def fake_get(url, params=None, timeout=None, headers=None):
         calls.append(1)
         return FakeResponse(429) if len(calls) < 2 else FakeResponse(200, {"ok": True})
 
@@ -61,7 +61,7 @@ def test_get_retries_on_429(app, monkeypatch):
 
 
 def test_get_gives_up_after_retries(app, monkeypatch):
-    def fake_get(url, params=None, timeout=None):
+    def fake_get(url, params=None, timeout=None, headers=None):
         raise requests.ConnectionError("sin red")
 
     monkeypatch.setattr(http.requests, "get", fake_get)
