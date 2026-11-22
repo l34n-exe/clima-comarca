@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 
 from app.core.exceptions import WeatherError
 from app.infrastructure import open_meteo_client
