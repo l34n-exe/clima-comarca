@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from flask import current_app
+from flask import current_app # type: ignore
 
 from ..core.exceptions import WeatherError
 from ..utils.sun import sunrise_sunset
