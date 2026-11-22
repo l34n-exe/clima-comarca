@@ -15,6 +15,10 @@ _FORECAST_NUMBERS = (
 )
 
 
+def _optional_text(value):
+    return value if isinstance(value, str) and value else None
+
+
 def serialize_weather(payload):
     payload = require_mapping(payload, "clima")
     result = {
@@ -30,6 +34,7 @@ def serialize_weather(payload):
     result["rafaga_kmh"] = (
         None if gusts is None else require_number(gusts, "clima.rafaga_kmh")
     )
+    result["fuente"] = _optional_text(payload.get("fuente"))
     return result
 
 
@@ -84,4 +89,5 @@ def serialize_forecast(payload):
         "dias": result_days,
         "horas": result_hours,
         "stale": require_boolean(payload.get("stale"), "pronóstico.stale"),
+        "fuente": _optional_text(payload.get("fuente")),
     }

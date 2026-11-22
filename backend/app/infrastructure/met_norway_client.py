@@ -37,7 +37,7 @@ def _entries(location):
     try:
         raw = http.get(
             API_URL,
-            {"lat": location["lat"], "lon": location["lon"]},
+            {"lat": round(location["lat"], 4), "lon": round(location["lon"], 4)},
             headers={"User-Agent": USER_AGENT},
         ).json()
         timeseries = raw["properties"]["timeseries"]

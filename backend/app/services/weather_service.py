@@ -64,10 +64,18 @@ def _with_fallback(primary, fallback):
 
     def fetch(location):
         try:
-            return primary(location)
-        except WeatherError:
-            current_app.logger.info("Proveedor principal falló, probando respaldo")
-            return fallback(location)
+            data = primary(location)
+            data["fuente"] = "open-meteo"
+            return data
+        except WeatherError as exc:
+            current_app.logger.warning(
+                "Proveedor principal falló para %s, usando MET Norway: %s",
+                location["slug"],
+                exc,
+            )
+            data = fallback(location)
+            data["fuente"] = "met-norway"
+            return data
 
     return fetch
 

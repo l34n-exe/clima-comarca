@@ -123,10 +123,12 @@ def test_schema_accepts_null_gusts(app):
                 "dias": [_forecast_day()],
                 "horas": [_hour()] * 24,
                 "stale": False,
+                "fuente": "met-norway",
             }
         )
     assert payload["dias"][0]["rafaga_max_kmh"] is None
     assert payload["horas"][0]["rafaga_kmh"] is None
+    assert payload["fuente"] == "met-norway"
 
 
 def test_schema_rejects_empty_sun(app):
@@ -166,6 +168,39 @@ def test_fallback_uses_secondary_when_primary_fails(app, monkeypatch):
             weather_service.met_norway_client.fetch_current,
         )
         assert fetch(VIEDMA)["temp"] == 15.0
+        assert fetch(VIEDMA)["fuente"] == "met-norway"
+
+
+def test_fallback_tags_primary_source(app, monkeypatch):
+    monkeypatch.setattr(
+        weather_service.open_meteo_client,
+        "fetch_current",
+        lambda loc: {"localidad": "Viedma", "temp": 20.0},
+    )
+    with app.app_context():
+        fetch = weather_service._with_fallback(
+            weather_service.open_meteo_client.fetch_current,
+            weather_service.met_norway_client.fetch_current,
+        )
+        assert fetch(VIEDMA)["fuente"] == "open-meteo"
+
+
+def test_met_norway_rounds_coordinates_and_sends_user_agent(app, monkeypatch):
+    calls = []
+
+    def fake_get(url, params=None, headers=None):
+        calls.append((url, params, headers))
+        return FakeResp(payload())
+
+    monkeypatch.setattr(met_norway_client.http, "get", fake_get)
+    location = {**VIEDMA, "lat": -40.8135123, "lon": -62.9967456}
+    with app.app_context():
+        met_norway_client.fetch_current(location)
+
+    _, params, headers = calls[0]
+    assert params["lat"] == -40.8135
+    assert params["lon"] == -62.9967
+    assert headers["User-Agent"] == met_norway_client.USER_AGENT
 
 
 def test_fallback_raises_when_both_fail(app, monkeypatch):

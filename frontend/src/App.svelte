@@ -51,6 +51,17 @@
       : "Comarca Weather";
   });
 
+  const FUENTES = {
+    "open-meteo": "Open-Meteo",
+    "met-norway": "MET Norway (respaldo)",
+  };
+  let fuenteTexto = $derived.by(() => {
+    const names = [weather?.fuente, forecast?.fuente]
+      .map((f) => FUENTES[f])
+      .filter(Boolean);
+    return [...new Set(names)].join(" / ");
+  });
+
   const value = (r) => (r.status === "fulfilled" ? r.value : null);
   const failure = (r) => (r.status === "rejected" ? r.reason.message : "");
 
@@ -285,5 +296,6 @@
 </main>
 
 <footer class="attribution">
-  Datos: Open-Meteo (pronóstico y mareas) · NOAA (observaciones METAR)
+  Datos: Open-Meteo (pronóstico y mareas) · MET Norway (respaldo) · NOAA (observaciones METAR)
+  {#if fuenteTexto}<br />Fuente actual del pronóstico: {fuenteTexto}{/if}
 </footer>
