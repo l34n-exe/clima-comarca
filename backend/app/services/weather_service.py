@@ -11,6 +11,11 @@ from . import cache_service
 _LOCK_WAIT_SECONDS = 2.0
 _LOCK_POLL_SECONDS = 0.3
 
+# Versión del formato cacheado del pronóstico: subirla cuando cambie la
+# forma de los datos (campos nuevos, renombres, semántica) para invalidar
+# entradas viejas que ya no tienen la estructura esperada
+FORECAST_CACHE_VERSION = 3
+
 
 def _fresh(envelope, ttl):
     return envelope and time.time() - envelope["saved_at"] < ttl
@@ -91,7 +96,7 @@ def get_current(location):
 
 def get_forecast(location):
     return _get_with_cache(
-        "forecast-v2",
+        f"forecast-v{FORECAST_CACHE_VERSION}",
         location,
         current_app.config["CACHE_TTL_FORECAST"],
         _with_fallback(open_meteo_client.fetch_forecast, met_norway_client.fetch_forecast),
