@@ -1,7 +1,7 @@
 import time
 
-import requests
-from flask import current_app
+import requests # type: ignore
+from flask import current_app # type: ignore
 
 from ..core.exceptions import WeatherError
 

@@ -5,7 +5,7 @@ import uuid
 from flask import Flask, g, jsonify, request #type: ignore
 from flask_cors import CORS #type: ignore
 from flask_limiter import Limiter #type: ignore
-from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix # type: ignore
 
 from .config import Config
 from .extensions import init_redis

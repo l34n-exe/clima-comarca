@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from flask import current_app
+from flask import current_app # type: ignore
 
 from ...core.exceptions import WeatherError
 from .validation import require_boolean, require_mapping, require_number, require_text

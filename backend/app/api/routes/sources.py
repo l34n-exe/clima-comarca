@@ -1,4 +1,4 @@
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, request # type: ignore
 
 from ...core.exceptions import WeatherError
 from ...services import accuracy_service, locations_service, weather_service

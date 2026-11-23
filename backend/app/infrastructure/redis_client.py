@@ -1,5 +1,5 @@
-import redis
-from flask import current_app
+import redis # type: ignore
+from flask import current_app # type: ignore
 
 
 def init_redis(app):

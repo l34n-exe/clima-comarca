@@ -2,7 +2,7 @@ import re
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from flask import current_app
+from flask import current_app # type: ignore
 
 from ..core.exceptions import WeatherError
 from . import http

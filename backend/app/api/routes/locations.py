@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request # type: ignore
 
 from ...api.schemas.location_schema import serialize_locations
 from ...services.locations_service import search

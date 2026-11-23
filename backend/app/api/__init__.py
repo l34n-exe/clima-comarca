@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint # type: ignore
 
 api_bp = Blueprint("api", __name__)
 
