@@ -8,7 +8,11 @@ Plataforma para consultar el clima de la Comarca Patagónica (Viedma, Carmen de 
 
 **Stack:** Flask + Redis (caché) en el backend, Svelte + Vite servido por nginx en el frontend.
 
-Incluye ráfagas de viento, probabilidad de lluvia, salida y puesta del sol, pronóstico horario de 24 horas y selección de localidad por búsqueda o ubicación cercana. La localidad seleccionada queda en el fragmento de URL (por ejemplo, `#el-condor`) y se conserva al compartir el enlace; además se recuerda en el navegador para la próxima visita. El título de la pestaña cambia según la localidad (`Clima en El Cóndor · Comarca Weather`), los gráficos horarios marcan máximos y mínimos con sus valores, y la página muestra esqueletos de carga y botones de reintento ante errores. Un pie de página acredita las fuentes y muestra cuál está respondiendo en ese momento: Open-Meteo (pronóstico y mareas), MET Norway/yr.no (respaldo) y NOAA (observaciones METAR).
+- Ráfagas de viento, probabilidad de lluvia y salida/puesta del sol.
+- Pronóstico horario de 24 horas y tabla de 7 días.
+- Selección de localidad por búsqueda o ubicación cercana; la elección queda en el fragmento de URL (`#el-condor`), se conserva al compartir el enlace y se recuerda en el navegador.
+- Título de pestaña por localidad, máximos y mínimos marcados en los gráficos, esqueletos de carga y botones de reintento ante errores.
+- Pie de página que acredita las fuentes con enlaces y muestra cuál responde en ese momento: Open-Meteo (pronóstico y mareas), MET Norway/yr.no (respaldo) y NOAA (observaciones METAR).
 
 ## Correr todo con Docker
 
@@ -117,7 +121,11 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 - [MET Norway](https://api.met.no/) — proveedor de respaldo para clima actual y pronóstico (gratuita; pide User-Agent identificable, que el cliente envía).
 - [NOAA](https://tgftp.nws.noaa.gov/) — observaciones METAR de la estación SAVV (Viedma), servidas desde el servidor de datos del National Weather Service.
 
-La app cita cada fuente en el pie de página. Open-Meteo exige atribución con enlace (datos CC BY 4.0) y limita su API gratuita al uso no comercial; consultá las condiciones de MET Norway y NOAA en sus sitios.
+Condiciones de uso verificadas:
+
+- **Open-Meteo**: datos CC BY 4.0, exige atribución con enlace visible ("Weather data by Open-Meteo.com"); la API gratuita es solo para uso no comercial y limita a ~10.000 llamadas/día, 5.000/hora y 600/minuto por IP — de ahí el caché y el respaldo del diseño.
+- **MET Norway**: también CC BY 4.0 y exige un User-Agent identificable (el cliente envía `clima-comarca/1.0` con el enlace al repo), tope de ~20 req/s y coordenadas truncadas a 4 decimales — ambas reglas ya implementadas.
+- **NOAA/NWS**: dominio público, sin atribución obligatoria (basta no presentarlo como propio ni insinuar afiliación); la app la incluye igual.
 
 ## Tests
 
