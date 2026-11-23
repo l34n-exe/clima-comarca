@@ -29,22 +29,22 @@ Compose espera a que Redis y la API estén saludables antes de iniciar los servi
 
 Variables de entorno configurables en `.env` (ver `.env.example`):
 
-| Variable                  | Qué hace                                              | Valor por defecto                                        |
-| ------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
-| `REDIS_URL`               | Conexión a Redis (caché, locks, precisión, rate limit) | `redis://localhost:6379/0`                              |
-| `CORS_ORIGINS`            | Orígenes permitidos, separados por comas              | `http://localhost:5173`                                  |
-| `CACHE_TTL_CURRENT`       | Frescura del clima actual (segundos)                  | `600`                                                    |
-| `CACHE_TTL_FORECAST`      | Frescura del pronóstico (segundos)                    | `3600`                                                   |
-| `CACHE_TTL_TIDES`         | Frescura de las mareas (segundos)                     | `21600`                                                  |
-| `CACHE_TTL_OBSERVATION`   | Frescura de la observación METAR (segundos)           | `600`                                                    |
-| `CACHE_STALE_EXTRA`       | Retención extra del dato viejo para `stale` (segundos) | `86400`                                                  |
-| `HTTP_TIMEOUT`            | Timeout por request a los proveedores (segundos)      | `8`                                                      |
-| `HTTP_RETRIES`            | Reintentos ante 5xx o fallos de red (un 429 no reintenta) | `3`                                                |
-| `HTTP_RETRY_BACKOFF`      | Backoff base exponencial entre reintentos (segundos)  | `0.5`                                                    |
-| `WEATHER_MODELS`          | Modelos comparados en `/models` (mínimo 2, por comas) | `ecmwf_ifs025,gfs_global,icon_global,gem_global`          |
-| `METAR_URL`               | Endpoint METAR decodificado; debe contener `{station}` | `https://tgftp.nws.noaa.gov/.../decoded/{station}.TXT`    |
-| `OBSERVATION_MAX_AGE_MIN` | Antigüedad máxima aceptable de la observación (min)   | `180`                                                    |
-| `RATE_LIMIT_STORAGE_URI`  | Storage del límite de peticiones; vacío = memoria por proceso | —                                              |
+| Variable                  | Qué hace                                                      | Valor por defecto                                      |
+|---------------------------|---------------------------------------------------------------|--------------------------------------------------------|
+| `REDIS_URL`               | Conexión a Redis (caché, locks, precisión, rate limit)        | `redis://localhost:6379/0`                             |
+| `CORS_ORIGINS`            | Orígenes permitidos, separados por comas                      | `http://localhost:5173`                                |
+| `CACHE_TTL_CURRENT`       | Frescura del clima actual (segundos)                          | `600`                                                  |
+| `CACHE_TTL_FORECAST`      | Frescura del pronóstico (segundos)                            | `3600`                                                 |
+| `CACHE_TTL_TIDES`         | Frescura de las mareas (segundos)                             | `21600`                                                |
+| `CACHE_TTL_OBSERVATION`   | Frescura de la observación METAR (segundos)                   | `600`                                                  |
+| `CACHE_STALE_EXTRA`       | Retención extra del dato viejo para `stale` (segundos)        | `86400`                                                |
+| `HTTP_TIMEOUT`            | Timeout por request a los proveedores (segundos)              | `8`                                                    |
+| `HTTP_RETRIES`            | Reintentos ante 5xx o fallos de red (un 429 no reintenta)     | `3`                                                    |
+| `HTTP_RETRY_BACKOFF`      | Backoff base exponencial entre reintentos (segundos)          | `0.5`                                                  |
+| `WEATHER_MODELS`          | Modelos comparados en `/models` (mínimo 2, por comas)         | `ecmwf_ifs025,gfs_global,icon_global,gem_global`       |
+| `METAR_URL`               | Endpoint METAR decodificado; debe contener `{station}`        | `https://tgftp.nws.noaa.gov/.../decoded/{station}.TXT` |
+| `OBSERVATION_MAX_AGE_MIN` | Antigüedad máxima aceptable de la observación (min)           | `180`                                                  |
+| `RATE_LIMIT_STORAGE_URI`  | Storage del límite de peticiones; vacío = memoria por proceso | —                                                      |
 
 Los TTL pueden ser cero para desactivar la frescura del caché, pero no negativos. `RATE_LIMIT_STORAGE_URI` con una URL `redis://` comparte el límite entre todos los workers (en Render se setea solo desde la Key Value).
 
