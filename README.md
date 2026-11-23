@@ -25,8 +25,28 @@ La API queda en <http://localhost:5000/api/v1> y la web en <http://localhost:808
 
 Para desarrollar el frontend con recarga en caliente: `cd frontend && npm install && npm run dev` (queda en <http://localhost:5173> y el proxy de Vite manda `/api` a Flask, sin conflicto con el 8080 de Docker).
 
-Compose espera a que Redis y la API estén saludables antes de iniciar los servicios que dependen de ellos. Los TTL del caché, `CACHE_STALE_EXTRA` y `HTTP_TIMEOUT` se pueden ajustar en `.env`; los TTL pueden ser cero para desactivar la frescura del caché, pero no negativos. `CORS_ORIGINS` acepta una lista de orígenes separada por comas. El contenedor del backend corre como un usuario sin privilegios (`appuser`), no como root.
-Las variables `WEATHER_MODELS`, `METAR_URL`, `CACHE_TTL_OBSERVATION` y `OBSERVATION_MAX_AGE_MIN` controlan la comparación de modelos y las observaciones meteorológicas. `WEATHER_MODELS` debe incluir al menos dos modelos separados por comas, `METAR_URL` debe contener `{station}` y `OBSERVATION_MAX_AGE_MIN` debe ser mayor que cero. `HTTP_RETRIES` y `HTTP_RETRY_BACKOFF` ajustan los reintentos ante fallos transitorios de los proveedores. `RATE_LIMIT_STORAGE_URI` apunta el límite de peticiones a Redis para compartirlo entre workers (vacío = memoria por proceso).
+Compose espera a que Redis y la API estén saludables antes de iniciar los servicios que dependen de ellos. El contenedor del backend corre como un usuario sin privilegios (`appuser`), no como root.
+
+Variables de entorno configurables en `.env` (ver `.env.example`):
+
+| Variable                  | Qué hace                                              | Valor por defecto                                        |
+| ------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| `REDIS_URL`               | Conexión a Redis (caché, locks, precisión, rate limit) | `redis://localhost:6379/0`                              |
+| `CORS_ORIGINS`            | Orígenes permitidos, separados por comas              | `http://localhost:5173`                                  |
+| `CACHE_TTL_CURRENT`       | Frescura del clima actual (segundos)                  | `600`                                                    |
+| `CACHE_TTL_FORECAST`      | Frescura del pronóstico (segundos)                    | `3600`                                                   |
+| `CACHE_TTL_TIDES`         | Frescura de las mareas (segundos)                     | `21600`                                                  |
+| `CACHE_TTL_OBSERVATION`   | Frescura de la observación METAR (segundos)           | `600`                                                    |
+| `CACHE_STALE_EXTRA`       | Retención extra del dato viejo para `stale` (segundos) | `86400`                                                  |
+| `HTTP_TIMEOUT`            | Timeout por request a los proveedores (segundos)      | `8`                                                      |
+| `HTTP_RETRIES`            | Reintentos ante 5xx o fallos de red (un 429 no reintenta) | `3`                                                |
+| `HTTP_RETRY_BACKOFF`      | Backoff base exponencial entre reintentos (segundos)  | `0.5`                                                    |
+| `WEATHER_MODELS`          | Modelos comparados en `/models` (mínimo 2, por comas) | `ecmwf_ifs025,gfs_global,icon_global,gem_global`          |
+| `METAR_URL`               | Endpoint METAR decodificado; debe contener `{station}` | `https://tgftp.nws.noaa.gov/.../decoded/{station}.TXT`    |
+| `OBSERVATION_MAX_AGE_MIN` | Antigüedad máxima aceptable de la observación (min)   | `180`                                                    |
+| `RATE_LIMIT_STORAGE_URI`  | Storage del límite de peticiones; vacío = memoria por proceso | —                                              |
+
+Los TTL pueden ser cero para desactivar la frescura del caché, pero no negativos. `RATE_LIMIT_STORAGE_URI` con una URL `redis://` comparte el límite entre todos los workers (en Render se setea solo desde la Key Value).
 
 La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resuelve con `realip` saltando Cloudflare y la red interna de Render) y registra cada request con un `X-Request-ID`. Cuando una clave de caché vence, un candado en Redis evita que varias peticiones simultáneas salgan a buscar el mismo dato.
 
@@ -121,11 +141,11 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 - [MET Norway](https://api.met.no/) — proveedor de respaldo para clima actual y pronóstico (gratuita; pide User-Agent identificable, que el cliente envía).
 - [NOAA](https://tgftp.nws.noaa.gov/) — observaciones METAR de la estación SAVV (Viedma), servidas desde el servidor de datos del National Weather Service.
 
-Condiciones de uso verificadas:
+Condiciones de uso verificadas en noviembre de 2026 (cada servicio puede cambiarlas; enlaces a los textos originales):
 
-- **Open-Meteo**: datos CC BY 4.0, exige atribución con enlace visible ("Weather data by Open-Meteo.com"); la API gratuita es solo para uso no comercial y limita a ~10.000 llamadas/día, 5.000/hora y 600/minuto por IP — de ahí el caché y el respaldo del diseño.
-- **MET Norway**: también CC BY 4.0 y exige un User-Agent identificable (el cliente envía `clima-comarca/1.0` con el enlace al repo), tope de ~20 req/s y coordenadas truncadas a 4 decimales — ambas reglas ya implementadas.
-- **NOAA/NWS**: dominio público, sin atribución obligatoria (basta no presentarlo como propio ni insinuar afiliación); la app la incluye igual.
+- **[Open-Meteo](https://open-meteo.com/en/terms)**: datos CC BY 4.0, exige atribución con enlace visible ("Weather data by Open-Meteo.com"); la API gratuita es solo para uso no comercial y limita a ~10.000 llamadas/día, 5.000/hora y 600/minuto por IP — de ahí el caché y el respaldo del diseño.
+- **[MET Norway](https://api.met.no/doc/TermsOfService)**: también CC BY 4.0 y exige un User-Agent identificable (el cliente envía `clima-comarca/1.0` con el enlace al repo), tope de ~20 req/s y coordenadas truncadas a 4 decimales — ambas reglas ya implementadas.
+- **[NOAA/NWS](https://www.weather.gov/disclaimer/)**: dominio público, sin atribución obligatoria (basta no presentarlo como propio ni insinuar afiliación); la app la incluye igual.
 
 ## Tests
 
@@ -136,3 +156,7 @@ pytest
 ```
 
 Los tests usan `fakeredis` y clientes simulados: no necesitan Docker ni acceso a los proveedores externos.
+
+## Licencia
+
+El código es [MIT](LICENSE) (Copyright (c) 2026 Leandro Hidalgo). Ojo: la licencia CC BY 4.0 que se menciona en "Fuentes de datos" aplica a los **datos** de los proveedores, no al código de este proyecto.
