@@ -10,8 +10,9 @@
 #
 # Ojo con el plan gratis:
 #   - El web service duerme tras 15 min sin tráfico y tarda ~1 min en despertar.
-#   - La Key Value gratis expira a los 30 días (se puede renovar; el caché se
-#     regenera solo, pero el historial de precisión vuelve a empezar de cero).
+#   - La Key Value gratis guarda los datos solo en memoria: se pierden en
+#     cada reinicio de la instancia (el caché se regenera, pero el
+#     historial de precisión vuelve a empezar de cero).
 
 services:
   - type: keyvalue

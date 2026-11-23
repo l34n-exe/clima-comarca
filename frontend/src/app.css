@@ -74,6 +74,8 @@ main > section { padding-block: 1.5rem; }
   width: min(960px, 100% - 2rem); margin: 0 auto; padding-block: 1rem 2rem;
   color: var(--muted); font-size: 0.8rem; text-align: center;
 }
+.attribution a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.attribution a:hover { color: var(--band); }
 .detail { color: var(--muted); margin: 0.3rem 0 0; max-width: 60ch; }
 .note { color: var(--muted); font-size: 0.9rem; max-width: 70ch; }
 .error { color: var(--err); font-weight: 600; }

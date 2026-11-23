@@ -36,7 +36,7 @@ La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resu
 2. En Render: **New → Blueprint** y elegí el repo. Detecta los 3 servicios.
 3. Esperá el deploy (~5 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
 
-Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico (la primera visita tarda ~1 minuto en despertar) y la Key Value de Redis expira a los 30 días (se renueva desde el dashboard; el caché se regenera solo, pero el historial de precisión vuelve a empezar de cero).
+Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico (la primera visita tarda ~1 minuto en despertar) y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
 
 ### VPS u otro host con Docker
 
@@ -105,7 +105,7 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 
 ## Limitaciones conocidas
 
-- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value expira a los 30 días (el historial de precisión vuelve a empezar de cero).
+- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
 - **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Además solo acumula datos cuando alguien consulta la app: sin visitas no hay muestras nuevas.
 - **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
 - **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
@@ -115,9 +115,9 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 
 - [Open-Meteo](https://open-meteo.com/) — pronóstico, comparación de modelos y mareas (gratuita, sin API key).
 - [MET Norway](https://api.met.no/) — proveedor de respaldo para clima actual y pronóstico (gratuita; pide User-Agent identificable, que el cliente envía).
-- [NOAA](https://aviationweather.gov/) — observaciones METAR de la estación SAVV (Viedma).
+- [NOAA](https://tgftp.nws.noaa.gov/) — observaciones METAR de la estación SAVV (Viedma), servidas desde el servidor de datos del National Weather Service.
 
-Las tres APIs son gratuitas y sus condiciones piden atribución, que la app muestra en el pie de página y en las respuestas (`fuente`).
+La app cita cada fuente en el pie de página. Open-Meteo exige atribución con enlace (datos CC BY 4.0) y limita su API gratuita al uso no comercial; consultá las condiciones de MET Norway y NOAA en sus sitios.
 
 ## Tests
 

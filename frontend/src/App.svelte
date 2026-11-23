@@ -310,7 +310,13 @@
 </main>
 
 <footer class="attribution">
-  Datos: Open-Meteo (pronóstico y mareas) · MET Norway (respaldo) · NOAA (observaciones METAR)
+  Datos:
+  <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+  (pronóstico y mareas) ·
+  <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a>
+  (respaldo) ·
+  <a href="https://tgftp.nws.noaa.gov/" target="_blank" rel="noopener">NOAA</a>
+  (observaciones METAR)
   {#if selected}
     <br />Fuente actual del pronóstico: {fuenteTexto || "sin datos todavía"}
   {/if}
