@@ -97,11 +97,19 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 
 Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis una muestra por hora UTC: la temperatura estimada por el proveedor activo y la observada por el METAR de la estación. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Solo se registran estimaciones de Open-Meteo: si el respaldo MET Norway está respondiendo, la muestra guarda la observación pero no la estimación, para no mezclar dos modelos en el promedio. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
 
-Ojo con qué mide: compara la temperatura **actual** del modelo contra el termómetro, no el pronóstico con horas de anticipación. La estimación "actual" de Open-Meteo ya viene ajustada con observaciones, así que el número tiende a ser optimista — sirve como piso de calidad, no como medida de skill de pronóstico.
+Ojo con qué mide: compara la temperatura **actual** del modelo contra el termómetro, no el pronóstico con horas de anticipación. La estimación "actual" de Open-Meteo ya viene ajustada con observaciones, así que un error bajo no prueba que el modelo pronostique bien: solo muestra que se parece al termómetro en el presente.
 
 ## Sobre las mareas
 
 Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, resolución ~8 km). Las pleamares y bajamares se calculan en el backend buscando máximos y mínimos de la serie horaria. Es una estimación: puede diferir de las tablas oficiales y no sirve para navegar. La respuesta incluye un campo `aviso` con esto.
+
+## Limitaciones conocidas
+
+- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value expira a los 30 días (el historial de precisión vuelve a empezar de cero).
+- **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada).
+- **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; no sirve para navegar.
+- **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
+- **Rate limit**: 120 req/min por IP; si se supera, la API responde 429 y el frontend muestra el error hasta que se libera la ventana.
 
 ## Tests
 

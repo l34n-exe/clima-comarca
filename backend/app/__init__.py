@@ -35,6 +35,35 @@ def create_app(overrides=None):
         first = xff.split(",")[0].strip()
         return first or request.remote_addr or "unknown"
 
+    if not app.logger.handlers:
+        app.logger.addHandler(logging.StreamHandler())
+    app.logger.setLevel(logging.INFO)
+
+    # Los hooks se registran ANTES del limiter: si el límite rechaza la
+    # request, su before_request corre primero y estos igual tienen que
+    # haber inicializado g.request_id/g.request_start, o el after_request
+    # rompe con AttributeError y un 429 termina siendo un 500
+    @app.before_request
+    def _start_request():
+        # Se respeta un X-Request-ID entrante para poder seguir la petición
+        # a través de nginx y el frontend
+        g.request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        g.request_start = time.monotonic()
+
+    @app.after_request
+    def _log_request(response):
+        elapsed_ms = int((time.monotonic() - getattr(g, "request_start", time.monotonic())) * 1000)
+        app.logger.info(
+            "req=%s %s %s -> %s (%dms)",
+            getattr(g, "request_id", "-"),
+            request.method,
+            request.path,
+            response.status_code,
+            elapsed_ms,
+        )
+        response.headers.setdefault("X-Request-ID", getattr(g, "request_id", "-"))
+        return response
+
     limiter = Limiter(
         key_func=_client_ip,
         default_limits=["120 per minute"],
@@ -47,31 +76,6 @@ def create_app(overrides=None):
     @app.errorhandler(429)
     def ratelimit_exceeded(_error):
         return jsonify({"error": "Demasiadas solicitudes, probá en un minuto"}), 429
-
-    if not app.logger.handlers:
-        app.logger.addHandler(logging.StreamHandler())
-    app.logger.setLevel(logging.INFO)
-
-    @app.before_request
-    def _start_request():
-        # Se respeta un X-Request-ID entrante para poder seguir la petición
-        # a través de nginx y el frontend
-        g.request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
-        g.request_start = time.monotonic()
-
-    @app.after_request
-    def _log_request(response):
-        elapsed_ms = int((time.monotonic() - g.request_start) * 1000)
-        app.logger.info(
-            "req=%s %s %s -> %s (%dms)",
-            g.request_id,
-            request.method,
-            request.path,
-            response.status_code,
-            elapsed_ms,
-        )
-        response.headers["X-Request-ID"] = g.request_id
-        return response
 
     from .api import api_bp
     app.register_blueprint(api_bp, url_prefix="/api/v1")
