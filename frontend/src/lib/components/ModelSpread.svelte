@@ -2,7 +2,7 @@
   import { num } from "../utils/format.js";
   let { data } = $props();
 
-  let today = $derived(data.dias[0]);
+  let today = $derived(data.dias[0] ?? null);
   let names = $derived(Object.fromEntries(data.modelos.map((m) => [m.id, m.nombre])));
   const range = (key) => {
     const values = today.modelos.map((m) => m[key]);
@@ -12,6 +12,7 @@
     Math.round(lo) === Math.round(hi) ? `${num(lo, 0)} °C` : `${num(lo, 0)} a ${num(hi, 0)} °C`;
 </script>
 
+{#if today}
 <details class="models">
   <summary>
     Hoy, según {today.modelos.length} modelos: máxima de {span(range("max"))} y mínima de {span(range("min"))}.
@@ -25,6 +26,7 @@
     <p class="note">No se pudo actualizar. Estos datos son de la última consulta exitosa.</p>
   {/if}
 </details>
+{/if}
 
 <style>
   details { margin-top: 0.75rem; }

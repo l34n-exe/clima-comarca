@@ -5,7 +5,6 @@ import uuid
 from flask import Flask, g, jsonify, request #type: ignore
 from flask_cors import CORS #type: ignore
 from flask_limiter import Limiter #type: ignore
-from flask_limiter.util import get_remote_address #type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
@@ -28,8 +27,18 @@ def create_app(overrides=None):
     # proxy y no la del cliente (clave para el límite de peticiones)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
+    def _client_ip():
+        # La cadena es navegador → Cloudflare → Render → nginx → Flask, así que
+        # el remote_addr que deja ProxyFix es una IP interna compartida por
+        # todos los usuarios. El primer valor de X-Forwarded-For es el cliente
+        # real (los proxies solo agregan al final). Es falsificable por un
+        # cliente que mande el header, pero alcanza para un límite antiabuso.
+        xff = request.headers.get("X-Forwarded-For", "")
+        first = xff.split(",")[0].strip()
+        return first or request.remote_addr or "unknown"
+
     limiter = Limiter(
-        key_func=get_remote_address,
+        key_func=_client_ip,
         default_limits=["120 per minute"],
         storage_uri="memory://",
     )

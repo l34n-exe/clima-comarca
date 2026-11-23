@@ -33,14 +33,12 @@ def get(url, params=None, headers=None):
             # Ante 429 el proveedor suele indicar cuánto esperar
             wait = backoff * (2**attempt)
             if isinstance(exc, requests.HTTPError) and exc.response is not None:
-                headers = getattr(exc.response, "headers", None) or {}
-                retry_after = headers.get("Retry-After")
+                response_headers = getattr(exc.response, "headers", None) or {}
+                retry_after = response_headers.get("Retry-After")
                 if retry_after and retry_after.isdigit():
                     wait = max(wait, min(int(retry_after), 10))
             if attempt < retries - 1:
                 time.sleep(wait)
             continue
-        if attempt < retries - 1:
-            time.sleep(backoff * (2**attempt))
     current_app.logger.warning("Proveedor inaccesible tras %s intentos: %s %s", retries, url, error)
     raise WeatherError(str(error)) from error

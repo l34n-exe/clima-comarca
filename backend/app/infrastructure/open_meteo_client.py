@@ -124,10 +124,12 @@ def fetch_forecast(location):
             isinstance(day, str) and day for day in dates
         ):
             raise WeatherError("Respuesta inesperada: daily.time no es una lista válida")
-        # Las ráfagas pueden venir null: se aceptan y quedan como None
+        # Las ráfagas pueden venir ausentes o con nulls: quedan como None
         gust_field = "wind_gusts_10m_max"
         gusts = d.get(gust_field)
-        if not isinstance(gusts, list) or len(gusts) != len(dates):
+        if gusts is None:
+            gusts = [None] * len(dates)
+        elif not isinstance(gusts, list) or len(gusts) != len(dates):
             raise WeatherError(
                 f"Respuesta inesperada: daily.{gust_field} no coincide con daily.time"
             )
@@ -163,7 +165,7 @@ def fetch_forecast(location):
                 "lluvia_mm": d["precipitation_sum"][i],
                 "prob_lluvia": d["precipitation_probability_max"][i],
                 "viento_max_kmh": d["wind_speed_10m_max"][i],
-                "rafaga_max_kmh": d["wind_gusts_10m_max"][i],
+                "rafaga_max_kmh": gusts[i],
                 "amanecer": d["sunrise"][i],
                 "atardecer": d["sunset"][i],
                 "codigo": d["weather_code"][i],

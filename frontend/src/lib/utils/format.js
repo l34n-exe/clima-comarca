@@ -6,9 +6,6 @@ export const hhmm = (iso) => iso.slice(11, 16);
 export const dayLabel = (iso) =>
   new Date(iso + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' });
 
-export const dayShort = (iso) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
-
 export const compass = (deg) => ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'][Math.round(deg / 45) % 8];
 
 // Hora actual en Argentina con el mismo formato que manda el backend,

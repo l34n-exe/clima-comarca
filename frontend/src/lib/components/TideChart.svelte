@@ -16,7 +16,9 @@
   let data = $derived(tides.serie.map((p) => ({ fecha: toDate(p.hora), altura: p.altura_m })));
   let now = $derived(nowAR());
   let nowDate = $derived(toDate(now));
-  let nowVisible = $derived(nowDate >= data[0].fecha && nowDate <= data[data.length - 1].fecha);
+  let nowVisible = $derived(
+    data.length > 0 && nowDate >= data[0].fecha && nowDate <= data[data.length - 1].fecha,
+  );
   let heights = $derived(tides.serie.map((p) => p.altura_m));
   // Holgura arriba y abajo para que las etiquetas de pleamar/bajamar no toquen los bordes
   let yDomain = $derived([Math.min(...heights) - 0.6, Math.max(...heights) + 0.6]);

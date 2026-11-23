@@ -8,7 +8,7 @@ Plataforma para consultar el clima de la Comarca Patagónica (Viedma, Carmen de 
 
 **Stack:** Flask + Redis (caché) en el backend, Svelte + Vite servido por nginx en el frontend.
 
-Incluye ráfagas de viento, probabilidad de lluvia, salida y puesta del sol, pronóstico horario de 24 horas y selección de localidad por búsqueda o ubicación cercana. La localidad seleccionada queda en el fragmento de URL (por ejemplo, `#el-condor`) y se conserva al compartir el enlace; además se recuerda en el navegador para la próxima visita. El título de la pestaña cambia según la localidad (`Clima en El Cóndor · Comarca Weather`), los gráficos horarios marcan máximos y mínimos con sus valores, y la página muestra esqueletos de carga y botones de reintento ante errores. Un pie de página acredita las fuentes: Open-Meteo (pronóstico y mareas) y NOAA (observaciones METAR).
+Incluye ráfagas de viento, probabilidad de lluvia, salida y puesta del sol, pronóstico horario de 24 horas y selección de localidad por búsqueda o ubicación cercana. La localidad seleccionada queda en el fragmento de URL (por ejemplo, `#el-condor`) y se conserva al compartir el enlace; además se recuerda en el navegador para la próxima visita. El título de la pestaña cambia según la localidad (`Clima en El Cóndor · Comarca Weather`), los gráficos horarios marcan máximos y mínimos con sus valores, y la página muestra esqueletos de carga y botones de reintento ante errores. Un pie de página acredita las fuentes y muestra cuál está respondiendo en ese momento: Open-Meteo (pronóstico y mareas), MET Norway/yr.no (respaldo) y NOAA (observaciones METAR).
 
 ## Correr todo con Docker
 
@@ -71,7 +71,7 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 - **Candado anti-stampede**: al vencer una clave, un `SET NX EX` en Redis hace que un solo request salga a buscar el dato; el resto espera y lee el caché.
 - **Mareas como estimación**: salen del modelo marino global de Open-Meteo (~8 km de resolución), no de tablas de mareas locales. Sirven para planificar, no para navegar; la respuesta incluye un `aviso` y la sección correspondiente lo aclara.
 - **Precisión medida, no prometida**: en vez de decir "el modelo es bueno", la app registra cada hora la estimación vs. la observación METAR real de Viedma y muestra el error promedio de los últimos días. Los números se construyen con el uso.
-- **Proveedor de respaldo**: si Open-Meteo falla (rate limit, caída), el clima actual y el pronóstico se piden a MET Norway (yr.no). El respaldo no tiene comparación de modelos ni probabilidad de lluvia oficial: la probabilidad se estima por la precipitación prevista y las ráfagas igualan al viento. Si ambos proveedores fallan, se sirve el último dato cacheado marcado como `stale`.
+- **Proveedor de respaldo**: si Open-Meteo falla (rate limit, caída), el clima actual y el pronóstico se piden a MET Norway (yr.no). El respaldo no tiene comparación de modelos, probabilidad de lluvia oficial ni ráfagas: la probabilidad se estima por la precipitación prevista y las ráfagas quedan en `null` (la UI las oculta). Cada respuesta indica su `fuente` y el pie de página la muestra. Si ambos proveedores fallan, se sirve el último dato cacheado marcado como `stale`.
 
 ## Capturas
 
@@ -94,7 +94,7 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 
 ## Sobre la precisión del modelo
 
-Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis la temperatura estimada por Open-Meteo y la observada por el METAR de la estación, indexadas por hora UTC. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
+Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis la temperatura estimada por el proveedor activo (Open-Meteo o MET Norway) y la observada por el METAR de la estación, indexadas por hora UTC. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
 
 ## Sobre las mareas
 

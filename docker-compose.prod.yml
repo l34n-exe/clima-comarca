@@ -29,12 +29,13 @@ services:
       FLASK_ENV: production
       REDIS_URL: redis://redis:6379/0
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-      HTTP_TIMEOUT: ${HTTP_TIMEOUT:-10}
+      # Defaults completos: un valor vacío rompería Config.validate al arrancar
+      HTTP_TIMEOUT: ${HTTP_TIMEOUT:-8}
       HTTP_RETRIES: ${HTTP_RETRIES:-3}
       HTTP_RETRY_BACKOFF: ${HTTP_RETRY_BACKOFF:-0.5}
-      WEATHER_MODELS: ${WEATHER_MODELS:-}
-      METAR_URL: ${METAR_URL:-}
-      OBSERVATION_MAX_AGE_MIN: ${OBSERVATION_MAX_AGE_MIN:-}
+      WEATHER_MODELS: ${WEATHER_MODELS:-ecmwf_ifs025,gfs_global,icon_global,gem_global}
+      METAR_URL: ${METAR_URL:-https://tgftp.nws.noaa.gov/data/observations/metar/decoded/{station}.TXT}
+      OBSERVATION_MAX_AGE_MIN: ${OBSERVATION_MAX_AGE_MIN:-180}
     depends_on:
       redis:
         condition: service_healthy

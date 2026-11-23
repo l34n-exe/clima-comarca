@@ -22,10 +22,6 @@ def get_location(slug):
     return next((location for location in all_locations() if location["slug"] == slug), None)
 
 
-def get(slug):
-    return get_location(slug)
-
-
 def search(query):
     query = _normalize(query)
     if not query:
