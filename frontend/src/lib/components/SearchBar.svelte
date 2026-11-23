@@ -65,10 +65,11 @@
           {loc.nombre}
         </button>
       </li>
-    {:else}
-      <li class="none">No hay resultados para “{query}”. Probá con otro nombre.</li>
     {/each}
   </ul>
+  {#if locations.length > 0 && norm(query) !== '' && matches.length === 0}
+    <p class="none">No hay resultados para “{query}”. Probá con otro nombre.</p>
+  {/if}
   <button
     class="nearby"
     type="button"

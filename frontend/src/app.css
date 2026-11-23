@@ -64,12 +64,23 @@ header > p { color: var(--muted); margin: 0.4rem 0 1.5rem; max-width: 60ch; }
 }
 .search button:hover { border-color: var(--band); }
 .search button.active { background: var(--accent); color: #111111; border-color: var(--accent); }
-.search .none { color: var(--muted); }
+.search .none { color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0; }
 .search .nearby { margin-top: 0.75rem; border-color: var(--band); }
 .search .geo-error { margin: 0.5rem 0 0; color: var(--err); }
 
 main { padding-bottom: 4rem; }
 main > section { padding-block: 1.5rem; }
+/* Los mensajes de estado sueltos en <main> llevan el mismo margen que las secciones */
+main > .note, main > .status {
+  width: min(960px, 100% - 2rem); margin-inline: auto;
+}
+.status .note { margin: 0.25rem 0 0.75rem; }
+.status button {
+  font: inherit; cursor: pointer; padding: 0.45rem 1.1rem;
+  color: var(--ink); background: transparent;
+  border: 1.5px solid var(--band); border-radius: 999px;
+}
+.status button:hover { background: var(--band); color: var(--band-ink); }
 .attribution {
   width: min(960px, 100% - 2rem); margin: 0 auto; padding-block: 1rem 2rem;
   color: var(--muted); font-size: 0.8rem; text-align: center;

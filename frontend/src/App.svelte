@@ -35,6 +35,7 @@
   let loading = $state(false);
   let loadError = $state("");
   let reintentando = $state(false);
+  let reintento = $state(0);
   let requestId = 0;
   let popstateHandler;
   const STORAGE_KEY = "clima-comarca:location";
@@ -119,8 +120,9 @@
     reintentando = false;
   }
 
-  onRetry(() => {
+  onRetry((attempt) => {
     reintentando = true;
+    reintento = attempt;
   });
 
   function navigate(location) {
@@ -142,7 +144,10 @@
     return () => window.removeEventListener("popstate", popstateHandler);
   });
 
-  onMount(async () => {
+  async function boot() {
+    loadError = "";
+    reintentando = false;
+    reintento = 0;
     try {
       locations = await getLocations();
       locationsLoaded = true;
@@ -169,7 +174,9 @@
       reintentando = false;
       loadError = e.message;
     }
-  });
+  }
+
+  onMount(boot);
 </script>
 
 <header>
@@ -180,13 +187,17 @@
 <main aria-busy={loading}>
   {#if reintentando && !loadError}
     <p class="note" role="status">
-      El servidor está despertando, reintentando…
+      El servidor está despertando, reintentando (intento {reintento})…
     </p>
   {/if}
   {#if loadError}
-    <p class="error" role="alert">
-      {loadError} Revisá que el backend esté corriendo y recargá la página.
-    </p>
+    <div class="status">
+      <p class="error" role="alert">{loadError}</p>
+      <p class="note">
+        Puede ser que el servidor esté despertando o reiniciándose.
+      </p>
+      <button type="button" onclick={boot}>Reintentar</button>
+    </div>
   {:else if locationsLoaded && locations.length === 0}
     <p class="note" role="status">No hay localidades disponibles.</p>
   {:else if selected}
