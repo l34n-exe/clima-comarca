@@ -106,10 +106,18 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 ## Limitaciones conocidas
 
 - **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value expira a los 30 días (el historial de precisión vuelve a empezar de cero).
-- **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada).
-- **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; no sirve para navegar.
+- **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Además solo acumula datos cuando alguien consulta la app: sin visitas no hay muestras nuevas.
+- **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
 - **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
 - **Rate limit**: 120 req/min por IP; si se supera, la API responde 429 y el frontend muestra el error hasta que se libera la ventana.
+
+## Fuentes de datos
+
+- [Open-Meteo](https://open-meteo.com/) — pronóstico, comparación de modelos y mareas (gratuita, sin API key).
+- [MET Norway](https://api.met.no/) — proveedor de respaldo para clima actual y pronóstico (gratuita; pide User-Agent identificable, que el cliente envía).
+- [NOAA](https://aviationweather.gov/) — observaciones METAR de la estación SAVV (Viedma).
+
+Las tres APIs son gratuitas y sus condiciones piden atribución, que la app muestra en el pie de página y en las respuestas (`fuente`).
 
 ## Tests
 
