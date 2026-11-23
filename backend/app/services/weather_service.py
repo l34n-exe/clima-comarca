@@ -59,7 +59,7 @@ def _get_with_cache(kind, location, ttl, fetch):
         return {**data, "stale": False}
     finally:
         if locked:
-            cache_service.release_lock(key)
+            cache_service.release_lock(key, locked)
 
 
 def _with_fallback(primary, fallback):

@@ -40,7 +40,9 @@ def create_app(overrides=None):
     limiter = Limiter(
         key_func=_client_ip,
         default_limits=["120 per minute"],
-        storage_uri="memory://",
+        # Sin storage propio el límite vive en memoria de cada worker:
+        # con N workers el límite efectivo se multiplica por N
+        storage_uri=app.config["RATE_LIMIT_STORAGE_URI"] or "memory://",
     )
     limiter.init_app(app)
 

@@ -37,6 +37,13 @@ services:
           property: connectionString
       - key: CORS_ORIGINS
         value: https://clima-comarca.onrender.com
+      # Mismo Redis que el caché: el límite de 120 req/min se comparte
+      # entre los 2 workers de gunicorn en vez de duplicarse
+      - key: RATE_LIMIT_STORAGE_URI
+        fromService:
+          type: keyvalue
+          name: clima-redis
+          property: connectionString
 
   - type: web
     name: clima-comarca

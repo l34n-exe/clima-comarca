@@ -1,7 +1,19 @@
 import json
 import time
+import uuid
 
 from ..infrastructure.redis_client import get_redis
+
+
+# Libera el candado solo si sigue siendo nuestro (compare-and-delete).
+# Sin esto, un proceso cuyo candado expiró podría borrar el de otro.
+_RELEASE_IF_OWNER = """
+if redis.call('get', KEYS[1]) == ARGV[1] then
+    return redis.call('del', KEYS[1])
+else
+    return 0
+end
+"""
 
 
 def read(key):
@@ -15,9 +27,15 @@ def write(key, data, expire_in):
 
 
 def acquire_lock(key, ttl):
-    """Candado corto con expiración: si el proceso muere, el candado se libera solo."""
-    return bool(get_redis().set(f"{key}:lock", "1", ex=ttl, nx=True))
+    """Candado corto con expiración: si el proceso muere, el candado se libera solo.
+
+    Devuelve un token único si se adquirió, None si otro proceso lo tiene.
+    """
+    token = uuid.uuid4().hex
+    if get_redis().set(f"{key}:lock", token, ex=ttl, nx=True):
+        return token
+    return None
 
 
-def release_lock(key):
-    get_redis().delete(f"{key}:lock")
+def release_lock(key, token):
+    get_redis().eval(_RELEASE_IF_OWNER, 1, f"{key}:lock", token)

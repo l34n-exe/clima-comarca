@@ -36,6 +36,7 @@ services:
       WEATHER_MODELS: ${WEATHER_MODELS:-ecmwf_ifs025,gfs_global,icon_global,gem_global}
       METAR_URL: ${METAR_URL:-https://tgftp.nws.noaa.gov/data/observations/metar/decoded/{station}.TXT}
       OBSERVATION_MAX_AGE_MIN: ${OBSERVATION_MAX_AGE_MIN:-180}
+      RATE_LIMIT_STORAGE_URI: ${RATE_LIMIT_STORAGE_URI:-redis://redis:6379/0}
     depends_on:
       redis:
         condition: service_healthy

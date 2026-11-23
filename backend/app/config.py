@@ -39,6 +39,9 @@ class Config:
         "https://tgftp.nws.noaa.gov/data/observations/metar/decoded/{station}.TXT",
     )
     OBSERVATION_MAX_AGE_MIN = _integer_env("OBSERVATION_MAX_AGE_MIN", 180)
+    # Storage del rate limit: "memory://" (default, por proceso) o una URL
+    # redis:// para compartir el límite entre todos los workers
+    RATE_LIMIT_STORAGE_URI = os.getenv("RATE_LIMIT_STORAGE_URI") or None
     TIMEZONE = "America/Argentina/Buenos_Aires"
     HTTP_TIMEOUT = _integer_env("HTTP_TIMEOUT", 8)
     # Reintentos ante fallos transitorios de los proveedores (5xx, red)
