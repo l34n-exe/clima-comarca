@@ -8,6 +8,7 @@
     getModels,
     getObservation,
     getAccuracy,
+    onRetry,
   } from "./lib/api/client.js";
   import CurrentWeather from "./lib/components/CurrentWeather.svelte";
   import ForecastList from "./lib/components/ForecastList.svelte";
@@ -33,6 +34,7 @@
   let errors = $state({});
   let loading = $state(false);
   let loadError = $state("");
+  let reintentando = $state(false);
   let requestId = 0;
   let popstateHandler;
   const STORAGE_KEY = "clima-comarca:location";
@@ -114,7 +116,12 @@
       accuracy: failure(ac),
     };
     loading = false;
+    reintentando = false;
   }
+
+  onRetry(() => {
+    reintentando = true;
+  });
 
   function navigate(location) {
     if (window.location.hash !== `#${location.slug}`) {
@@ -139,6 +146,7 @@
     try {
       locations = await getLocations();
       locationsLoaded = true;
+      reintentando = false;
       if (locations.length === 0) return;
       const slug = window.location.hash.slice(1);
       let stored = null;
@@ -158,6 +166,7 @@
       }
       await select(initial);
     } catch (e) {
+      reintentando = false;
       loadError = e.message;
     }
   });
@@ -169,6 +178,11 @@
 </header>
 
 <main aria-busy={loading}>
+  {#if reintentando && !loadError}
+    <p class="note" role="status">
+      El servidor está despertando, reintentando…
+    </p>
+  {/if}
   {#if loadError}
     <p class="error" role="alert">
       {loadError} Revisá que el backend esté corriendo y recargá la página.

@@ -14,6 +14,14 @@ const RETRYABLE = new Set([502, 503, 504]);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// La UI se entera cuando una llamada está reintentando (backend
+// despertando) para mostrar "reintentando…" en vez de skeletons
+// que parecen colgados
+let retryListener = null;
+export const onRetry = (fn) => {
+  retryListener = fn;
+};
+
 // Todas las llamadas pasan por acá: un solo lugar para manejar errores
 async function get(path) {
   const deadline = Date.now() + RETRY_BUDGET_MS;
@@ -34,6 +42,7 @@ async function get(path) {
       if (!RETRYABLE.has(res.status)) throw lastError;
     }
     if (Date.now() + RETRY_DELAY_MS > deadline) throw lastError;
+    retryListener?.();
     await sleep(RETRY_DELAY_MS);
   }
 }
