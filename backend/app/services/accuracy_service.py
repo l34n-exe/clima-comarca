@@ -38,7 +38,10 @@ def record(location):
 
     try:
         current = weather_service.get_current(location)
-        if not current.get("stale"):
+        # Solo cuenta la estimación de Open-Meteo: si el respaldo MET Norway
+        # respondiera, mezclar dos modelos distintos haría que el "error
+        # promedio" no mida a ninguno
+        if not current.get("stale") and current.get("fuente") == "open-meteo":
             entry["e"] = current.get("temp")
     except WeatherError:
         pass

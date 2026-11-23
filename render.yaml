@@ -1,4 +1,4 @@
-# Blueprint de Render (render.com) — deploy gratis sin tarjeta.
+# Blueprint de Render (render.com) — deploy con plan gratis.
 # Render lee este archivo al crear el servicio desde el repo de GitHub.
 #
 # Arquitectura resultante:
@@ -10,8 +10,8 @@
 #
 # Ojo con el plan gratis:
 #   - El web service duerme tras 15 min sin tráfico y tarda ~1 min en despertar.
-#   - La Key Value gratis expira a los 30 días (se puede renovar; el caché y el
-#     historial de precisión se regeneran solos).
+#   - La Key Value gratis expira a los 30 días (se puede renovar; el caché se
+#     regenera solo, pero el historial de precisión vuelve a empezar de cero).
 
 services:
   - type: keyvalue

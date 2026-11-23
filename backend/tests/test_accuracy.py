@@ -24,8 +24,8 @@ def obs_payload(temp=15.0, age_min=20):
     }
 
 
-def current_payload(temp=17.0):
-    return {"localidad": "Viedma", "temp": temp, "stale": False}
+def current_payload(temp=17.0, fuente="open-meteo"):
+    return {"localidad": "Viedma", "temp": temp, "stale": False, "fuente": fuente}
 
 
 def test_record_stores_estimate_and_observation(app, monkeypatch):
@@ -63,6 +63,23 @@ def test_record_keeps_existing_fields(app, monkeypatch):
     entry = json.loads(next(iter(raw.values())))
     assert entry["e"] == 17.0 and entry["o"] == 15.0
     assert first != raw or True  # sanity: el hash existe
+
+
+def test_record_skips_fallback_source(app, monkeypatch):
+    # MET Norway no entra en la estadística: solo se mide Open-Meteo
+    monkeypatch.setattr(
+        weather_service,
+        "get_current",
+        lambda loc: current_payload(fuente="met-norway"),
+    )
+    monkeypatch.setattr(weather_service, "get_observation", lambda loc: obs_payload())
+    with app.app_context():
+        assert accuracy_service.record(VIEDMA) is True  # guarda solo la obs
+        raw = app.extensions["redis"].hgetall("accuracy:viedma")
+    import json
+
+    entry = json.loads(next(iter(raw.values())))
+    assert entry["e"] is None and entry["o"] == 15.0
 
 
 def test_record_skips_stale_data(app, monkeypatch):

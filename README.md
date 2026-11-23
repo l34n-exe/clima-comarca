@@ -24,11 +24,11 @@ Para desarrollar el frontend con recarga en caliente: `cd frontend && npm instal
 Compose espera a que Redis y la API estén saludables antes de iniciar los servicios que dependen de ellos. Los TTL del caché, `CACHE_STALE_EXTRA` y `HTTP_TIMEOUT` se pueden ajustar en `.env`; los TTL pueden ser cero para desactivar la frescura del caché, pero no negativos. `CORS_ORIGINS` acepta una lista de orígenes separada por comas. El contenedor del backend corre como un usuario sin privilegios (`appuser`), no como root.
 Las variables `WEATHER_MODELS`, `METAR_URL`, `CACHE_TTL_OBSERVATION` y `OBSERVATION_MAX_AGE_MIN` controlan la comparación de modelos y las observaciones meteorológicas. `WEATHER_MODELS` debe incluir al menos dos modelos separados por comas, `METAR_URL` debe contener `{station}` y `OBSERVATION_MAX_AGE_MIN` debe ser mayor que cero. `HTTP_RETRIES` y `HTTP_RETRY_BACKOFF` ajustan los reintentos ante fallos transitorios de los proveedores. `RATE_LIMIT_STORAGE_URI` apunta el límite de peticiones a Redis para compartirlo entre workers (vacío = memoria por proceso).
 
-La API limita a 120 peticiones por minuto por IP (`X-Forwarded-For` vía nginx) y registra cada request con un `X-Request-ID`. Cuando una clave de caché vence, un candado en Redis evita que varias peticiones simultáneas salgan a buscar el mismo dato.
+La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resuelve con `realip` saltando Cloudflare y la red interna de Render) y registra cada request con un `X-Request-ID`. Cuando una clave de caché vence, un candado en Redis evita que varias peticiones simultáneas salgan a buscar el mismo dato.
 
 ## Publicar
 
-### Render (gratis, sin tarjeta)
+### Render (plan gratis)
 
 `render.yaml` es un blueprint listo para usar:
 
@@ -36,7 +36,7 @@ La API limita a 120 peticiones por minuto por IP (`X-Forwarded-For` vía nginx) 
 2. En Render: **New → Blueprint** y elegí el repo. Detecta los 3 servicios.
 3. Esperá el deploy (~5 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
 
-Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico (la primera visita tarda ~1 minuto en despertar) y la Key Value de Redis expira a los 30 días (se renueva desde el dashboard; el caché y el historial de precisión se regeneran solos).
+Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico (la primera visita tarda ~1 minuto en despertar) y la Key Value de Redis expira a los 30 días (se renueva desde el dashboard; el caché se regenera solo, pero el historial de precisión vuelve a empezar de cero).
 
 ### VPS u otro host con Docker
 
@@ -54,6 +54,7 @@ flowchart LR
     nginx -->|/api/*| flask[Flask + Gunicorn<br/>validación y esquemas]
     flask --> redis[(Redis<br/>caché + locks + precisión)]
     flask -->|pronóstico y mareas| openmeteo[Open-Meteo API]
+    flask -->|respaldo| metno[MET Norway yr.no]
     flask -->|observaciones| noaa[NOAA METAR<br/>SAVV]
     subgraph Docker Compose
         nginx
@@ -70,7 +71,7 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 - **`stale` explícito**: cuando el proveedor falla y se sirve un dato viejo, la respuesta lo marca con `stale: true` y la UI lo indica. Es preferible mostrar información vencida y señalada que un error vacío.
 - **Candado anti-stampede**: al vencer una clave, un `SET NX EX` en Redis hace que un solo request salga a buscar el dato; el resto espera y lee el caché.
 - **Mareas como estimación**: salen del modelo marino global de Open-Meteo (~8 km de resolución), no de tablas de mareas locales. Sirven para planificar, no para navegar; la respuesta incluye un `aviso` y la sección correspondiente lo aclara.
-- **Precisión medida, no prometida**: en vez de decir "el modelo es bueno", la app registra cada hora la estimación vs. la observación METAR real de Viedma y muestra el error promedio de los últimos días. Los números se construyen con el uso.
+- **Precisión medida, no prometida**: en vez de decir "el modelo es bueno", la app registra la estimación vs. la observación METAR real de Viedma y muestra el error promedio de los últimos días. Los números se construyen con el uso.
 - **Proveedor de respaldo**: si Open-Meteo falla (rate limit, caída), el clima actual y el pronóstico se piden a MET Norway (yr.no). El respaldo no tiene comparación de modelos, probabilidad de lluvia oficial ni ráfagas: la probabilidad se estima por la precipitación prevista y las ráfagas quedan en `null` (la UI las oculta). Cada respuesta indica su `fuente` y el pie de página la muestra. Si ambos proveedores fallan, se sirve el último dato cacheado marcado como `stale`.
 
 ## Capturas
@@ -84,17 +85,19 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 | Método | Ruta                             | Descripción                                        |
 | ------ | -------------------------------- | -------------------------------------------------- |
 | GET    | /api/v1/locations?q=             | Lista o busca localidades                          |
-| GET    | /api/v1/weather/< slug >         | Clima actual                                       |
-| GET    | /api/v1/forecast/< slug >        | Pronóstico a 7 días                                |
-| GET    | /api/v1/tides/< slug >           | Pleamares, bajamares y serie horaria (solo playas) |
-| GET    | /api/v1/models/< slug >          | Comparación de temperaturas entre modelos          |
-| GET    | /api/v1/observation/< slug >     | Observación METAR/NOAA de una estación             |
-| GET    | /api/v1/accuracy/< slug >?dias=7 | Error promedio del modelo vs. observación METAR    |
+| GET    | /api/v1/weather/<slug>          | Clima actual                                       |
+| GET    | /api/v1/forecast/<slug>         | Pronóstico a 7 días                                |
+| GET    | /api/v1/tides/<slug>            | Pleamares, bajamares y serie horaria (solo playas) |
+| GET    | /api/v1/models/<slug>           | Comparación de temperaturas entre modelos          |
+| GET    | /api/v1/observation/<slug>      | Observación METAR/NOAA de una estación             |
+| GET    | /api/v1/accuracy/<slug>?dias=7  | Error promedio del modelo vs. observación METAR    |
 | GET    | /api/v1/health                   | Estado de Flask y Redis                            |
 
 ## Sobre la precisión del modelo
 
-Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis la temperatura estimada por el proveedor activo (Open-Meteo o MET Norway) y la observada por el METAR de la estación, indexadas por hora UTC. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
+Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis una muestra por hora UTC: la temperatura estimada por el proveedor activo y la observada por el METAR de la estación. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Solo se registran estimaciones de Open-Meteo: si el respaldo MET Norway está respondiendo, la muestra guarda la observación pero no la estimación, para no mezclar dos modelos en el promedio. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
+
+Ojo con qué mide: compara la temperatura **actual** del modelo contra el termómetro, no el pronóstico con horas de anticipación. La estimación "actual" de Open-Meteo ya viene ajustada con observaciones, así que el número tiende a ser optimista — sirve como piso de calidad, no como medida de skill de pronóstico.
 
 ## Sobre las mareas
 

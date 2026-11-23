@@ -28,11 +28,9 @@ def create_app(overrides=None):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     def _client_ip():
-        # La cadena es navegador → Cloudflare → Render → nginx → Flask, así que
-        # el remote_addr que deja ProxyFix es una IP interna compartida por
-        # todos los usuarios. El primer valor de X-Forwarded-For es el cliente
-        # real (los proxies solo agregan al final). Es falsificable por un
-        # cliente que mande el header, pero alcanza para un límite antiabuso.
+        # nginx resuelve la IP real del cliente con realip (salta Cloudflare
+        # y la red interna de Render) y reenvía un único X-Forwarded-For, así
+        # que el primer valor ya es confiable y no falsificable por el cliente
         xff = request.headers.get("X-Forwarded-For", "")
         first = xff.split(",")[0].strip()
         return first or request.remote_addr or "unknown"
