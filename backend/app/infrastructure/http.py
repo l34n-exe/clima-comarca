@@ -7,12 +7,14 @@ from ..core.exceptions import WeatherError
 
 
 def _retryable(exc):
-    # 4xx es culpa del pedido: reintentar no cambia nada. 5xx, 429 (rate limit)
-    # y fallos de red/conexión sí pueden ser transitorios.
+    # 4xx es culpa del pedido: reintentar no cambia nada. 429 tampoco: el
+    # proveedor está limitando y reintentar rápido empeora el bloqueo, así
+    # que falla directo y el servicio pasa al respaldo. Solo 5xx y fallos
+    # de red/conexión pueden ser transitorios.
     if not isinstance(exc, requests.HTTPError):
         return True
     status = exc.response.status_code if exc.response is not None else 0
-    return status >= 500 or status == 429
+    return status >= 500
 
 
 def get(url, params=None, headers=None):
@@ -30,7 +32,8 @@ def get(url, params=None, headers=None):
             error = exc
             if not _retryable(exc):
                 break
-            # Ante 429 el proveedor suele indicar cuánto esperar
+            # Algunos 5xx (por ejemplo 503) traen Retry-After: se respeta
+            # con un tope para no demorar el respaldo más de la cuenta
             wait = backoff * (2**attempt)
             if isinstance(exc, requests.HTTPError) and exc.response is not None:
                 response_headers = getattr(exc.response, "headers", None) or {}

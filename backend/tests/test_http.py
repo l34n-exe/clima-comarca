@@ -46,18 +46,20 @@ def test_get_does_not_retry_4xx(app, monkeypatch):
     assert len(calls) == 1
 
 
-def test_get_retries_on_429(app, monkeypatch):
+def test_get_does_not_retry_on_429(app, monkeypatch):
+    # Reintentar contra un proveedor que limita empeora el bloqueo:
+    # el 429 tiene que fallar directo para que el servicio use el respaldo
     calls = []
 
     def fake_get(url, params=None, timeout=None, headers=None):
         calls.append(1)
-        return FakeResponse(429) if len(calls) < 2 else FakeResponse(200, {"ok": True})
+        return FakeResponse(429)
 
     monkeypatch.setattr(http.requests, "get", fake_get)
     monkeypatch.setattr(http.time, "sleep", lambda seconds: None)
-    with app.app_context():
-        assert http.get("http://proveedor").json() == {"ok": True}
-    assert len(calls) == 2
+    with app.app_context(), pytest.raises(WeatherError):
+        http.get("http://proveedor")
+    assert len(calls) == 1
 
 
 def test_get_gives_up_after_retries(app, monkeypatch):
