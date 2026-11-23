@@ -49,6 +49,24 @@ def test_fetch_current(app, monkeypatch):
     assert data["hora"]
 
 
+def test_fetch_current_prefers_past_entry(app, monkeypatch):
+    """El clima actual nunca debe tomar una hora futura de la serie."""
+    # Una entrada pasada (-30 min) y otra futura más cercana (+20 min):
+    # "la más cercana" sería la futura, pero hay que quedarse con la pasada
+    timeseries = [
+        entry(-0.5, temp=10.0),
+        entry(0.33, temp=20.0),
+    ]
+    monkeypatch.setattr(
+        met_norway_client.http,
+        "get",
+        lambda *a, **k: FakeResp({"properties": {"timeseries": timeseries}}),
+    )
+    with app.app_context():
+        data = met_norway_client.fetch_current(VIEDMA)
+    assert data["temp"] == 10.0
+
+
 def test_fetch_forecast(app, monkeypatch):
     timeseries = [entry(i, temp=10 + i % 8, precip=0.5 if i % 12 == 0 else 0) for i in range(48)]
     monkeypatch.setattr(

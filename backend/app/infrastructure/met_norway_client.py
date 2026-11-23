@@ -95,7 +95,15 @@ def fetch_current(location):
     def entry_dt(entry):
         return datetime.fromisoformat(entry["time"].replace("Z", "+00:00")).astimezone(tz)
 
-    entry = min(entries, key=lambda e: abs((entry_dt(e) - now).total_seconds()))
+    # La serie es un pronóstico horario: la entrada más cercana a ahora
+    # puede ser una hora futura. Para el clima "actual" se prefiere la
+    # última hora ya ocurrida; solo si no hay ninguna pasada se usa la
+    # más cercana (así `hora` nunca queda en el futuro).
+    past = [e for e in entries if entry_dt(e) <= now]
+    if past:
+        entry = max(past, key=entry_dt)
+    else:
+        entry = min(entries, key=lambda e: abs((entry_dt(e) - now).total_seconds()))
     instant = _instant(entry)
     code, _ = _symbol(entry)
     wind_ms = _require(instant, "wind_speed")
