@@ -84,14 +84,14 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 
 | Método | Ruta                             | Descripción                                        |
 | ------ | -------------------------------- | -------------------------------------------------- |
-| GET    | /api/v1/locations?q=             | Lista o busca localidades                          |
-| GET    | /api/v1/weather/<slug>          | Clima actual                                       |
-| GET    | /api/v1/forecast/<slug>         | Pronóstico a 7 días                                |
-| GET    | /api/v1/tides/<slug>            | Pleamares, bajamares y serie horaria (solo playas) |
-| GET    | /api/v1/models/<slug>           | Comparación de temperaturas entre modelos          |
-| GET    | /api/v1/observation/<slug>      | Observación METAR/NOAA de una estación             |
-| GET    | /api/v1/accuracy/<slug>?dias=7  | Error promedio del modelo vs. observación METAR    |
-| GET    | /api/v1/health                   | Estado de Flask y Redis                            |
+| GET    | `/api/v1/locations?q=`           | Lista o busca localidades                          |
+| GET    | `/api/v1/weather/<slug>`         | Clima actual                                       |
+| GET    | `/api/v1/forecast/<slug>`        | Pronóstico a 7 días                                |
+| GET    | `/api/v1/tides/<slug>`           | Pleamares, bajamares y serie horaria (solo playas) |
+| GET    | `/api/v1/models/<slug>`          | Comparación de temperaturas entre modelos          |
+| GET    | `/api/v1/observation/<slug>`     | Observación METAR/NOAA de una estación             |
+| GET    | `/api/v1/accuracy/<slug>?dias=7` | Error promedio del modelo vs. observación METAR    |
+| GET    | `/api/v1/health`                 | Estado de Flask y Redis                            |
 
 ## Sobre la precisión del modelo
 
