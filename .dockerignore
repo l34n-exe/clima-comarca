@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+**/__pycache__
+**/*.pyc
+**/node_modules
+frontend/dist
+.pytest_cache
+backend/tests
+.vscode
+.devin
+docs
+*.md
+!README.md

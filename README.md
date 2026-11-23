@@ -57,10 +57,14 @@ La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resu
 `render.yaml` es un blueprint listo para usar:
 
 1. Subí el repo a GitHub.
-2. En Render: **New → Blueprint** y elegí el repo. Detecta los 3 servicios.
-3. Esperá el deploy (~5 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
+2. En Render: **New → Blueprint** y elegí el repo. Detecta 2 servicios: un web service único (nginx + Flask en el mismo contenedor) y la Key Value de Redis.
+3. Esperá el deploy (~5-10 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
 
-Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico (la primera visita tarda ~1 minuto en despertar) y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
+Al ser un solo servicio, hay un solo "despertar" de ~1 minuto en vez de la espera encadenada frontend→backend. El frontend reintenta automáticamente durante ~2.5 minutos mientras tanto.
+
+Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
+
+**Mantenerlo despierto (opcional)**: un servicio free usa ~744 de las 750 horas mensuales del workspace, así que UN SOLO servicio puede quedar siempre encendido con un ping externo cada 5 minutos a `https://clima-comarca.onrender.com/api/v1/health` (UptimeRobot, cron-job.org — ese endpoint solo hace ping a Redis, no gasta cuota de los proveedores). Render no prohíbe explícitamente los pings de keep-alive, pero su política de uso aceptable es gris: si el proyecto crece, lo correcto es un plan pago. Ojo: tiene que ser el único servicio free del workspace o las horas no alcanzan.
 
 ### VPS u otro host con Docker
 
@@ -70,21 +74,18 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 
 `docker-compose.prod.yml` no expone Redis ni el backend: solo nginx queda en el puerto 80 y reenvía `/api` al backend por la red interna. Los servicios reinician solos y Redis guarda sus datos en un volumen. Sirve igual para Railway, Fly.io o cualquier VPS con Docker; en esos casos cada servicio se despliega por separado y hay que apuntar `API_UPSTREAM` al host interno del backend.
 
+También se puede desplegar todo en **un solo contenedor** con el `Dockerfile` de la raíz (nginx + gunicorn adentro, `/api` por `127.0.0.1`): `docker build -t clima-comarca . && docker run -p 8080:8080 --env-file .env clima-comarca`. Es la misma imagen que usa el blueprint de Render.
+
 ## Arquitectura
 
 ```mermaid
 flowchart LR
-    user([Navegador]) -->|HTTP| nginx[nginx<br/>estáticos + /api]
-    nginx -->|/api/*| flask[Flask + Gunicorn<br/>validación y esquemas]
-    flask --> redis[(Redis<br/>caché + locks + precisión)]
+    user([Navegador]) -->|HTTPS| svc[Web service<br/>nginx + Flask/Gunicorn<br/>mismo contenedor]
+    svc -->|/api interno| flask[Flask<br/>validación y esquemas]
+    flask --> redis[(Redis Key Value<br/>caché + locks + precisión)]
     flask -->|pronóstico y mareas| openmeteo[Open-Meteo API]
     flask -->|respaldo| metno[MET Norway yr.no]
     flask -->|observaciones| noaa[NOAA METAR<br/>SAVV]
-    subgraph Docker Compose
-        nginx
-        flask
-        redis
-    end
 ```
 
 El frontend nunca habla directo con los proveedores: todo pasa por la API, que valida las respuestas con esquemas antes de servirlas.

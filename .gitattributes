@@ -1,0 +1,5 @@
+# Los scripts de shell y Dockerfiles deben quedar en LF: CRLF rompe el
+# shebang dentro de los contenedores Linux
+*.sh text eol=lf
+Dockerfile* text eol=lf
+.dockerignore text eol=lf

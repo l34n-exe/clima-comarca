@@ -1,15 +1,21 @@
 # Blueprint de Render (render.com) — deploy con plan gratis.
 # Render lee este archivo al crear el servicio desde el repo de GitHub.
 #
-# Arquitectura resultante:
-#   navegador → web (nginx, público) → web (backend Flask, URL pública)
+# Arquitectura resultante (un solo web service):
+#   navegador → nginx (estáticos + /api) → gunicorn/Flask (mismo contenedor)
 #                                        → keyvalue (Redis)
-# Los private services no tienen plan gratis en Render, así que el backend
-# también es un web service: el navegador nunca lo llama directo, nginx le
-# reenvía /api por HTTPS.
+#
+# Un solo servicio = un solo "despertar" (~1 min) en vez de la espera
+# encadenada frontend→backend. Además, un servicio despierto 24/7 usa
+# ~744 de las 750 horas gratis mensuales del workspace: entra justo,
+# siempre que sea el ÚNICO servicio free del workspace.
 #
 # Ojo con el plan gratis:
-#   - El web service duerme tras 15 min sin tráfico y tarda ~1 min en despertar.
+#   - El servicio duerme tras 15 minutos sin tráfico y tarda ~1 min en
+#     despertar. Se puede evitar con un ping externo cada 5 min a
+#     /api/v1/health (UptimeRobot, cron-job.org): Render no lo prohíbe
+#     explícitamente, pero su política de uso aceptable es gris — si el
+#     proyecto crece, la opción correcta es un plan pago.
 #   - La Key Value gratis guarda los datos solo en memoria: se pierden en
 #     cada reinicio de la instancia (el caché se regenera, pero el
 #     historial de precisión vuelve a empezar de cero).
@@ -22,11 +28,13 @@ services:
     plan: free
 
   - type: web
-    name: clima-backend
+    name: clima-comarca
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: free
+    # El health check atraviesa nginx → gunicorn → Redis: verifica la
+    # cadena completa, no solo que nginx responda estáticos
     healthCheckPath: /api/v1/health
     envVars:
       - key: FLASK_ENV
@@ -45,17 +53,6 @@ services:
           type: keyvalue
           name: clima-redis
           property: connectionString
-
-  - type: web
-    name: clima-comarca
-    runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
-    plan: free
-    healthCheckPath: /
-    envVars:
-      # URL pública real del servicio backend en Render (el nombre puede
-      # llevar sufijo si el nombre simple estaba ocupado). Si se recrea el
-      # servicio, actualizar con la URL del panel (Connect).
-      - key: API_UPSTREAM
-        value: https://clima-backend-54jy.onrender.com
+      # nginx del contenedor reenvía /api a gunicorn por localhost;
+      # no hace falta configurarlo, el default de entrypoint.sh ya es
+      # http://127.0.0.1:5000
