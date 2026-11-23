@@ -43,5 +43,9 @@ def get(url, params=None, headers=None):
             if attempt < retries - 1:
                 time.sleep(wait)
             continue
-    current_app.logger.warning("Proveedor inaccesible tras %s intentos: %s %s", retries, url, error)
+    # No siempre se agotan los intentos: un 4xx (incluido 429) corta al
+    # primero, así que se registra cuántos se hicieron de verdad
+    current_app.logger.warning(
+        "Proveedor inaccesible tras %s intento(s): %s %s", attempt + 1, url, error
+    )
     raise WeatherError(str(error)) from error

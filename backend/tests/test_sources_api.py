@@ -69,17 +69,17 @@ def test_models_unknown_location_is_404(client, monkeypatch):
     assert client.get("/api/v1/models/no-existe").status_code == 404
 
 
-def test_models_provider_failure_is_502(client, monkeypatch):
+def test_models_provider_failure_is_500(client, monkeypatch):
     def boom(location):
         raise WeatherError("caído")
 
     monkeypatch.setattr(open_meteo_client, "fetch_models", boom)
     res = client.get("/api/v1/models/viedma")
-    assert res.status_code == 502
+    assert res.status_code == 500
     assert res.get_json()["error"] == "No se pudo obtener la comparación de modelos por ahora"
 
 
-def test_models_invalid_payload_is_502(client, monkeypatch):
+def test_models_invalid_payload_is_500(client, monkeypatch):
     monkeypatch.setattr(
         open_meteo_client,
         "fetch_models",
@@ -89,7 +89,7 @@ def test_models_invalid_payload_is_502(client, monkeypatch):
             "dias": [],
         },
     )
-    assert client.get("/api/v1/models/viedma").status_code == 502
+    assert client.get("/api/v1/models/viedma").status_code == 500
 
 
 def test_observation_returns_contract(client, monkeypatch):
@@ -114,13 +114,13 @@ def test_observation_location_without_station_is_404(client, monkeypatch):
     assert client.get("/api/v1/observation/el-condor").status_code == 404
 
 
-def test_observation_provider_failure_is_502(client, monkeypatch):
+def test_observation_provider_failure_is_500(client, monkeypatch):
     def boom(location):
         raise WeatherError("caído")
 
     monkeypatch.setattr(noaa_metar_client, "fetch_observation", boom)
     res = client.get("/api/v1/observation/viedma")
-    assert res.status_code == 502
+    assert res.status_code == 500
     assert res.get_json()["error"] == "No se pudo obtener la observación por ahora"
 
 

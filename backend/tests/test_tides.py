@@ -114,11 +114,11 @@ def test_tides_endpoint_only_for_beaches(client, monkeypatch):
     assert res.get_json()["stale"] is False
 
 
-def test_tides_endpoint_502_when_provider_fails(client, monkeypatch):
+def test_tides_endpoint_500_when_provider_fails(client, monkeypatch):
     def boom(location):
         raise open_meteo_client.WeatherError("caído")
 
     monkeypatch.setattr(open_meteo_client, "fetch_tides", boom)
     res = client.get("/api/v1/tides/el-espigon")
-    assert res.status_code == 502
+    assert res.status_code == 500
     assert "mareas" in res.get_json()["error"]

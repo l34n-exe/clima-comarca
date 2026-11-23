@@ -17,7 +17,8 @@ def _respond(slug, getter, serializer, error_message, needs_station=False):
     try:
         return jsonify(serializer(getter(location)))
     except WeatherError:
-        return jsonify({"error": error_message}), 502
+        # 500 y no 502: ver comentario en routes/weather.py
+        return jsonify({"error": error_message}), 500
 
 
 @api_bp.get("/models/<slug>")
@@ -54,4 +55,4 @@ def accuracy(slug):
         accuracy_service.record_in_background(current_app._get_current_object(), location)
         return jsonify(serialize_accuracy(accuracy_service.stats(location, days)))
     except WeatherError:
-        return jsonify({"error": "No se pudo calcular la precisión por ahora"}), 502
+        return jsonify({"error": "No se pudo calcular la precisión por ahora"}), 500

@@ -16,7 +16,10 @@ def _respond(slug, getter, error_message, only_type=None):
     try:
         return jsonify(getter(location))
     except WeatherError:
-        return jsonify({"error": error_message}), 502
+        # 500 y no 502: el frontend reintenta 502/503/504 como "servidor
+        # despertando" (cold start de Render). Un fallo del proveedor no
+        # se cura reintentando, así que se reporta como error de la app.
+        return jsonify({"error": error_message}), 500
 
 
 @api_bp.get("/weather/<slug>")

@@ -51,23 +51,23 @@ def test_stale_when_provider_fails(monkeypatch):
     assert res.get_json()["stale"] is True
 
 
-def test_502_when_provider_fails_and_no_cache(client, monkeypatch):
+def test_500_when_provider_fails_and_no_cache(client, monkeypatch):
     def boom(location):
         raise open_meteo_client.WeatherError("caído")
 
     monkeypatch.setattr(open_meteo_client, "fetch_current", boom)
     monkeypatch.setattr(met_norway_client, "fetch_current", boom)
-    assert client.get("/api/v1/weather/viedma").status_code == 502
+    assert client.get("/api/v1/weather/viedma").status_code == 500
 
 
-def test_invalid_normalized_weather_is_502(client, monkeypatch):
+def test_invalid_normalized_weather_is_500(client, monkeypatch):
     monkeypatch.setattr(
         open_meteo_client,
         "fetch_current",
         lambda location: {"localidad": location["nombre"], "temp": 18},
     )
     response = client.get("/api/v1/weather/viedma")
-    assert response.status_code == 502
+    assert response.status_code == 500
     assert response.get_json()["error"] == "No se pudo obtener el clima por ahora"
 
 
@@ -107,7 +107,7 @@ def test_forecast_contract_is_returned(client, monkeypatch):
     assert response.get_json()["stale"] is False
 
 
-def test_invalid_forecast_contract_is_502(client, monkeypatch):
+def test_invalid_forecast_contract_is_500(client, monkeypatch):
     monkeypatch.setattr(
         open_meteo_client,
         "fetch_forecast",
@@ -118,4 +118,4 @@ def test_invalid_forecast_contract_is_502(client, monkeypatch):
         },
     )
     response = client.get("/api/v1/forecast/viedma")
-    assert response.status_code == 502
+    assert response.status_code == 500
