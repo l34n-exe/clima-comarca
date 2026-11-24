@@ -11,6 +11,8 @@ name: accuracy-sampler
 
 on:
   schedule:
+    # Minuto 37: desfasado de la hora en punto por la misma razon
+    # que el keepalive evita el minuto 0
     - cron: '37 * * * *'
   workflow_dispatch:
 
