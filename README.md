@@ -4,7 +4,7 @@
 
 Plataforma para consultar el clima de la Comarca Patagónica (Viedma, Carmen de Patagones y playas cercanas).
 
-**Demo:** <https://clima-comarca.onrender.com> — alojada en Render (plan gratis: duerme tras 15 min sin visitas; el primer request puede tardar hasta ~1 minuto, aunque en una medición real tardó ~12 s).
+**Demo:** <https://clima-comarca.onrender.com> — alojada en Render (plan gratis: duerme tras 15 min sin visitas; medido: 12 s en una muestra, Render documenta hasta ~1 minuto).
 
 **Stack:** Flask + Redis (caché) en el backend, Svelte + Vite servido por nginx en el frontend.
 
@@ -60,7 +60,7 @@ La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resu
 2. En Render: **New → Blueprint** y elegí el repo. Detecta 2 servicios: un web service único (nginx + Flask en el mismo contenedor) y la Key Value de Redis.
 3. Esperá el deploy (~5-10 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
 
-Al ser un solo servicio, hay un solo "despertar" (medido ~12 s; Render habla de ~1 minuto) en vez de la espera encadenada frontend→backend. El frontend reintenta automáticamente durante ~2.5 minutos mientras tanto.
+Al ser un solo servicio, hay un solo "despertar" (medido: 12 s en una muestra; Render documenta hasta ~1 minuto) en vez de la espera encadenada frontend→backend. El frontend reintenta automáticamente durante ~2.5 minutos mientras tanto.
 
 Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
 
@@ -120,7 +120,7 @@ El frontend nunca habla directo con los proveedores: todo pasa por la API, que v
 
 ## Sobre la precisión del modelo
 
-Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis una muestra por hora UTC: la temperatura estimada por el proveedor activo y la observada por el METAR de la estación. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Solo se registran estimaciones de Open-Meteo: si el respaldo MET Norway está respondiendo, la muestra guarda la observación pero no la estimación, para no mezclar dos modelos en el promedio. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV).
+Cada vez que se consulta `/api/v1/accuracy/<slug>` (la app lo hace junto con el resto de los datos), el backend guarda en Redis una muestra por hora UTC: la temperatura estimada por el proveedor activo y la observada por el METAR de la estación. Repetir la consulta dentro de la misma hora fusiona el registro en vez de duplicarlo. Solo se registran estimaciones de Open-Meteo: si el respaldo MET Norway está respondiendo, la muestra guarda la observación pero no la estimación, para no mezclar dos modelos en el promedio. Los datos viejos se descartan solos al leer: el hash tiene TTL y las estadísticas (`?dias=`, hasta 30) solo usan los últimos días pedidos. Devuelve error absoluto promedio (MAE), error máximo, sesgo (si el modelo sobreestima o subestima) y el detalle por día. Solo aplica a localidades con estación (`estacion` en `locations.json`, hoy Viedma/SAVV). Además del registro al consultar la app, el workflow `accuracy-sampler` llama al endpoint una vez por hora para que el historial crezca sin depender de visitas (los registros se fusionan por hora, así que los delays del cron no duplican).
 
 Ojo con qué mide: compara la temperatura **actual** del modelo contra el termómetro, no el pronóstico con horas de anticipación. La estimación "actual" de Open-Meteo ya viene ajustada con observaciones, así que un error bajo no prueba que el modelo pronostique bien: solo muestra que se parece al termómetro en el presente.
 
@@ -130,9 +130,9 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 
 ## Limitaciones conocidas
 
-- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (en una medición real el primer request tardó ~12 s en responder; Render habla de ~1 minuto y puede variar) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
+- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (medido: 12 s en una muestra; Render documenta hasta ~1 minuto, y puede variar) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
 - **Keep-awake opcional**: el workflow de GitHub Actions que evita el sueño depende de un servicio externo y de la buena voluntad de sus cron (best-effort, se desactiva tras 60 días sin actividad en el repo); si falla, el sitio vuelve a dormir y la primera visita paga el minuto de espera. Es comodidad, no garantía.
-- **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Además solo acumula datos cuando alguien consulta la app: sin visitas no hay muestras nuevas.
+- **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Las muestras se acumulan al consultar la app y con un muestreo horario vía GitHub Actions (`accuracy-sampler`): si ese cron falla o el repo queda 60 días sin actividad, el historial deja de crecer hasta que vuelva a correr.
 - **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
 - **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
 - **Rate limit**: 120 req/min por IP; si se supera, la API responde 429 y el frontend muestra el error hasta que se libera la ventana.

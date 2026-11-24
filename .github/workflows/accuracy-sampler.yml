@@ -1,0 +1,24 @@
+name: accuracy-sampler
+
+# Una vez por hora llama a /api/v1/accuracy/viedma, que registra en Redis
+# una muestra de "estimación del modelo vs observación METAR" para esa
+# hora UTC. Así el historial de precisión crece aunque nadie visite la
+# app. El registro fusiona por hora, así que los delays típicos del cron
+# de GitHub no generan duplicados. Cuesta ~2 llamadas a proveedores por
+# hora (Open-Meteo y NOAA METAR), marginal contra sus límites. Ojo: si el
+# servicio de Render está dormido, el request lo despierta (~1 min) y la
+# muestra igual se registra.
+
+on:
+  schedule:
+    - cron: '37 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Registrar muestra de precision
+        run: curl -fsS --max-time 120 https://clima-comarca.onrender.com/api/v1/accuracy/viedma
