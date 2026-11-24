@@ -12,9 +12,7 @@ name: keepalive
 
 on:
   schedule:
-    # Minuto 2 de cada 5: desfasado del minuto 0, donde se concentran
-    # muchos crons y el scheduler de GitHub suele demorar más
-    - cron: '2-57/5 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions: {}
