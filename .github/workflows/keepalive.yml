@@ -5,8 +5,10 @@ name: keepalive
 # Redis: no llama a los proveedores ni gasta su cuota. Un servicio despierto
 # 24/7 usa ~744 de las 750 horas mensuales del workspace — tiene que ser el
 # único servicio free. Ojo: los cron de GitHub son best-effort y bajo carga
-# pueden demorarse o saltearse; si se necesita garantía, usar UptimeRobot
-# o cron-job.org (ver README).
+# pueden demorarse; en un repo público sin actividad por 60 días GitHub
+# desactiva los workflows programados (se rehabilita con un commit o a
+# mano). Si se necesita garantía, usar UptimeRobot o cron-job.org
+# (ver README).
 
 on:
   schedule:

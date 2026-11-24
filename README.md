@@ -64,7 +64,7 @@ Al ser un solo servicio, hay un solo "despertar" de ~1 minuto en vez de la esper
 
 Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
 
-**Mantenerlo despierto (opcional)**: un servicio free usa ~744 de las 750 horas mensuales del workspace, así que UN SOLO servicio puede quedar siempre encendido con un ping externo cada 5 minutos a `https://clima-comarca.onrender.com/api/v1/health` (ese endpoint solo hace ping a Redis, no gasta cuota de los proveedores). Este repo ya incluye `.github/workflows/keepalive.yml`, que hace ese ping desde GitHub Actions sin configurar nada — aunque los cron de GitHub son best-effort y bajo carga pueden demorarse; para una garantía usar UptimeRobot o cron-job.org. Render no prohíbe explícitamente los pings de keep-alive, pero su política de uso aceptable es gris: si el proyecto crece, lo correcto es un plan pago. Ojo: tiene que ser el único servicio free del workspace o las horas no alcanzan.
+**Mantenerlo despierto (opcional)**: un servicio free usa ~744 de las 750 horas mensuales del workspace, así que UN SOLO servicio puede quedar siempre encendido con un ping externo cada 5 minutos a `https://clima-comarca.onrender.com/api/v1/health` (ese endpoint solo hace ping a Redis, no gasta cuota de los proveedores). Este repo ya incluye `.github/workflows/keepalive.yml`, que hace ese ping desde GitHub Actions sin configurar nada. Tres salvedades: los cron de GitHub son best-effort y bajo carga pueden demorarse más de los 15 minutos que Render tolera antes de dormir; en un repo público sin actividad por 60 días GitHub desactiva los workflows programados automáticamente (se rehabilita solo con un commit o a mano); y si se necesita garantía, usar UptimeRobot o cron-job.org (ojo: no apuntar a `/robots.txt` — Render lo intercepta y nunca despierta el servicio). La otra salvedad es de política: la [AUP de Render](https://render.com/legal/acceptable-use) prohíbe "bypass restrictions" y no dice explícitamente si un ping de keep-alive cuenta — es zona gris; si el proyecto crece, lo correcto es un plan pago. Y tiene que ser el único servicio free del workspace o las horas no alcanzan.
 
 ### VPS u otro host con Docker
 
@@ -72,9 +72,9 @@ Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la 
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
-`docker-compose.prod.yml` no expone Redis ni el backend: solo nginx queda en el puerto 80 y reenvía `/api` al backend por la red interna. Los servicios reinician solos y Redis guarda sus datos en un volumen. Sirve igual para Railway, Fly.io o cualquier VPS con Docker; en esos casos cada servicio se despliega por separado y hay que apuntar `API_UPSTREAM` al host interno del backend.
+`docker-compose.prod.yml` despliega la variante **multi-contenedor** (frontend nginx + backend Flask + Redis como servicios separados) — es la opción para VPS propios o plataformas que despliegan cada servicio por separado. No expone Redis ni el backend al exterior: solo nginx queda en el puerto 80 y reenvía `/api` al backend por la red interna. Los servicios reinician solos y Redis guarda sus datos en un volumen.
 
-También se puede desplegar todo en **un solo contenedor** con el `Dockerfile` de la raíz (nginx + gunicorn adentro, `/api` por `127.0.0.1`): `docker build -t clima-comarca . && docker run -p 8080:8080 --env-file .env clima-comarca`. Es la misma imagen que usa el blueprint de Render.
+En Render se usa la variante **de contenedor único** (el `Dockerfile` de la raíz: nginx + gunicorn adentro, `/api` por `127.0.0.1`) porque un solo servicio free entra en las 750 horas mensuales del plan gratis; dos servicios despiertos no. Para un VPS también se puede usar esa misma imagen: `docker build -t clima-comarca . && docker run -p 8080:8080 --env-file .env clima-comarca`.
 
 ## Arquitectura
 
@@ -131,6 +131,7 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 ## Limitaciones conocidas
 
 - **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
+- **Keep-awake opcional**: el workflow de GitHub Actions que evita el sueño depende de un servicio externo y de la buena voluntad de sus cron (best-effort, se desactiva tras 60 días sin actividad en el repo); si falla, el sitio vuelve a dormir y la primera visita paga el minuto de espera. Es comodidad, no garantía.
 - **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Además solo acumula datos cuando alguien consulta la app: sin visitas no hay muestras nuevas.
 - **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
 - **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
