@@ -24,4 +24,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping health endpoint
-        run: curl -fsS --max-time 30 --retry 2 https://clima-comarca.onrender.com/api/v1/health
+        run: curl -fsS --max-time 60 --retry 2 --retry-all-errors https://clima-comarca.onrender.com/api/v1/health

@@ -4,7 +4,7 @@
 
 Plataforma para consultar el clima de la Comarca Patagónica (Viedma, Carmen de Patagones y playas cercanas).
 
-**Demo:** <https://clima-comarca.onrender.com> — alojada en Render (plan gratis: duerme tras 15 min sin visitas; medido: 12–14 s en 4 muestras, Render documenta hasta ~1 minuto).
+**Demo:** <https://clima-comarca.onrender.com> — alojada en Render. Normalmente está despierta gracias a un ping automático cada 5 minutos; si ese ping falla, el plan gratis la duerme tras 15 min sin visitas y el primer request puede tardar hasta ~1 minuto (medido: 12–14 s en 4 muestras).
 
 **Stack:** Flask + Redis (caché) en el backend, Svelte + Vite servido por nginx en el frontend.
 
@@ -64,7 +64,11 @@ Al ser un solo servicio, hay un solo "despertar" (medido: 12–14 s en 4 muestra
 
 Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
 
-**Mantenerlo despierto (opcional)**: un servicio free usa ~744 de las 750 horas mensuales del workspace, así que UN SOLO servicio puede quedar siempre encendido con un ping externo cada 5 minutos a `https://clima-comarca.onrender.com/api/v1/health` (ese endpoint solo hace ping a Redis, no gasta cuota de los proveedores). Este repo ya incluye `.github/workflows/keepalive.yml`, que hace ese ping desde GitHub Actions sin configurar nada. Tres salvedades: los cron de GitHub son best-effort y bajo carga pueden demorarse más de los 15 minutos que Render tolera antes de dormir; en un repo público sin actividad por 60 días GitHub desactiva los workflows programados automáticamente (se rehabilita solo con un commit o a mano); y si se necesita garantía, usar UptimeRobot o cron-job.org (ojo: no apuntar a `/robots.txt` — Render lo intercepta y nunca despierta el servicio). La otra salvedad es de política: la [AUP de Render](https://render.com/legal/acceptable-use) prohíbe "bypass restrictions" y no dice explícitamente si un ping de keep-alive cuenta — es zona gris; si el proyecto crece, lo correcto es un plan pago. Y tiene que ser el único servicio free del workspace o las horas no alcanzan.
+**Mantenerlo despierto (opcional)**: un servicio free usa ~744 de las 750 horas mensuales del workspace, así que UN SOLO servicio puede quedar siempre encendido con un ping externo cada 5 minutos a `https://clima-comarca.onrender.com/api/v1/health` (ese endpoint solo hace ping a Redis, no gasta cuota de los proveedores). Este repo ya incluye `.github/workflows/keepalive.yml`, que hace ese ping desde GitHub Actions sin configurar nada.
+
+- **Qué puede fallar**: los cron de GitHub son best-effort y bajo carga pueden demorarse más de los 15 minutos que Render tolera antes de dormir; en un repo público sin actividad por 60 días GitHub desactiva los workflows programados automáticamente (se rehabilita solo con un commit o a mano). Si se necesita garantía, usar UptimeRobot o cron-job.org (ojo: no apuntar a `/robots.txt` — Render lo intercepta y nunca despierta el servicio).
+- **Política de Render**: la [AUP de Render](https://render.com/legal/acceptable-use) prohíbe "bypass restrictions" y no dice explícitamente si un ping de keep-alive cuenta — es zona gris; si el proyecto crece, lo correcto es un plan pago.
+- **Requisito**: tiene que ser el único servicio free del workspace o las horas no alcanzan.
 
 ### VPS u otro host con Docker
 
@@ -133,6 +137,7 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 - **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (medido: 12–14 s en 4 muestras; Render documenta hasta ~1 minuto, y puede variar) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
 - **Keep-awake opcional**: el workflow de GitHub Actions que evita el sueño depende de un servicio externo y de la buena voluntad de sus cron (best-effort, se desactiva tras 60 días sin actividad en el repo); si falla, el sitio vuelve a dormir y la primera visita paga el minuto de espera. Es comodidad, no garantía.
 - **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Las muestras se acumulan al consultar la app y con un muestreo horario vía GitHub Actions (`accuracy-sampler`): si ese cron falla o el repo queda 60 días sin actividad, el historial deja de crecer hasta que vuelva a correr.
+- **GET con efecto**: `/api/v1/accuracy/<slug>` escribe una muestra en Redis cada vez que se consulta — cualquier visita o robot puede dispararlo. La fusión por hora limita el efecto, pero la versión limpia sería un POST autenticado; no se implementó porque el dato es de bajo riesgo.
 - **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
 - **Respaldo MET Norway**: sin ráfagas, sin comparación de modelos y con probabilidad de lluvia estimada; el pie de página avisa cuándo está activo.
 - **Rate limit**: 120 req/min por IP; si se supera, la API responde 429 y el frontend muestra el error hasta que se libera la ventana.

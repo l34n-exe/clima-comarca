@@ -23,4 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Registrar muestra de precision
-        run: curl -fsS --max-time 120 https://clima-comarca.onrender.com/api/v1/accuracy/viedma
+        # --max-time 120 cubre el cold start del servicio dormido (~12-60s);
+        # --retry reintenta timeouts/5xx para no registrar un run fallido
+        run: curl -fsS --max-time 120 --retry 2 --retry-all-errors --retry-delay 10 https://clima-comarca.onrender.com/api/v1/accuracy/viedma
