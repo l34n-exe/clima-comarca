@@ -4,7 +4,7 @@
 
 Plataforma para consultar el clima de la Comarca Patagónica (Viedma, Carmen de Patagones y playas cercanas).
 
-**Demo:** <https://clima-comarca.onrender.com> — alojada en Render (plan gratis: puede tardar ~1 minuto en despertar tras un rato sin visitas).
+**Demo:** <https://clima-comarca.onrender.com> — alojada en Render (plan gratis: duerme tras 15 min sin visitas; el primer request puede tardar hasta ~1 minuto, aunque en una medición real tardó ~12 s).
 
 **Stack:** Flask + Redis (caché) en el backend, Svelte + Vite servido por nginx en el frontend.
 
@@ -60,7 +60,7 @@ La API limita a 120 peticiones por minuto por IP real del cliente (nginx la resu
 2. En Render: **New → Blueprint** y elegí el repo. Detecta 2 servicios: un web service único (nginx + Flask en el mismo contenedor) y la Key Value de Redis.
 3. Esperá el deploy (~5-10 min la primera vez) y entrá a `https://clima-comarca.onrender.com`.
 
-Al ser un solo servicio, hay un solo "despertar" de ~1 minuto en vez de la espera encadenada frontend→backend. El frontend reintenta automáticamente durante ~2.5 minutos mientras tanto.
+Al ser un solo servicio, hay un solo "despertar" (medido ~12 s; Render habla de ~1 minuto) en vez de la espera encadenada frontend→backend. El frontend reintenta automáticamente durante ~2.5 minutos mientras tanto.
 
 Limitaciones del plan gratis: el sitio duerme tras 15 minutos sin tráfico y la Key Value gratuita guarda los datos solo en memoria: se pierden cada vez que la instancia se reinicia, y Render puede reiniciarla o darle mantenimiento en cualquier momento. El caché se regenera solo, pero el historial de precisión puede volver a empezar de cero sin aviso.
 
@@ -130,7 +130,7 @@ Salen del modelo marino global de Open-Meteo (variable `sea_level_height_msl`, r
 
 ## Limitaciones conocidas
 
-- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (~1 minuto de espera en la primera visita, con reintentos automáticos en el frontend) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
+- **Plan gratis de Render**: el sitio duerme tras 15 minutos sin tráfico (en una medición real el primer request tardó ~12 s en responder; Render habla de ~1 minuto y puede variar) y la Key Value guarda los datos solo en memoria: se pierden en cada reinicio de la instancia, que Render puede hacer en cualquier momento. El historial de precisión puede volver a empezar de cero sin aviso.
 - **Keep-awake opcional**: el workflow de GitHub Actions que evita el sueño depende de un servicio externo y de la buena voluntad de sus cron (best-effort, se desactiva tras 60 días sin actividad en el repo); si falla, el sitio vuelve a dormir y la primera visita paga el minuto de espera. Es comodidad, no garantía.
 - **Precisión**: mide la temperatura actual vs. METAR, no el pronóstico con anticipación (ver sección dedicada). Además solo acumula datos cuando alguien consulta la app: sin visitas no hay muestras nuevas.
 - **Mareas**: estimación del modelo marino global (~8 km), no tablas de mareas oficiales; en comparaciones puntuales los horarios difirieron en alrededor de una hora y las alturas no coinciden con las tablas. No sirve para navegar.
